@@ -10,7 +10,7 @@
 
 **Estados en el enum.** Las transiciones están en `Expedition`. El itinerario solo se toca en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings solo en revisión, borrándolos `returnToDraft`. Incidentes y observaciones en estados activos. Start/finish de una actividad, solo en `IN_PROGRESS`. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
 
-**`OperationalReport`.** La estimación no es un caso de uso: se deriva del plan. Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones.
+**`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas, copiados para no exponer `ActivityExecution` mutable.
 
 **Invariantes locales.** La ventana de tiempo no puede ser más corta que la duración de la policy. Los predecesores tienen que existir y no ser uno mismo. La zona de la actividad tiene que estar en la expedición. `TimePeriod` y `Quantity` se validan al construirse.
 
