@@ -216,15 +216,35 @@ class ExpeditionConstructionTest {
     @Test
     void simpleTransitionsReachFinished() {
         Expedition expedition = wetlandDraft();
-        expedition.addActivity(sampling());
+        Activity activity = sampling();
+        expedition.addActivity(activity);
         expedition.submitForReview();
         expedition.approve(ValidationResult.empty());
         expedition.start();
+        expedition.startActivity(activity.id(), DAY);
+        expedition.finishActivity(activity.id(), DAY.plusSeconds(3600), "samples stored");
         expedition.addIncident(Incident.of("rain delay", DAY.plusSeconds(3600)));
         expedition.finish();
 
         assertEquals(ExpeditionStatus.FINISHED, expedition.status());
         assertEquals(1, expedition.incidents().size());
+    }
+
+    @Test
+    void cannotFinishWhileActivitiesRemainOpen() {
+        Expedition expedition = approvedWithActivity();
+        Activity activity = expedition.itinerary().getFirst();
+        expedition.start();
+
+        assertThrows(IllegalArgumentException.class, expedition::finish);
+
+        expedition.startActivity(activity.id(), DAY);
+        assertThrows(IllegalArgumentException.class, expedition::finish);
+
+        expedition.finishActivity(activity.id(), DAY.plusSeconds(3600), "samples stored");
+        expedition.finish();
+
+        assertEquals(ExpeditionStatus.FINISHED, expedition.status());
     }
 
     @Test

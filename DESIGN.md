@@ -8,7 +8,7 @@
 
 **Ids hacia el catálogo.** Personas, vehículos, instrumentos, consumibles y permisos viven afuera. La expedición guarda UUIDs. Si cambia la disponibilidad, el plan no se rearma.
 
-**Estados en el enum.** Las transiciones están en `Expedition`. El itinerario solo se toca en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings solo en revisión, borrándolos `returnToDraft`. Incidentes y observaciones en estados activos. Start/finish de una actividad, solo en `IN_PROGRESS`. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
+**Estados en el enum.** Las transiciones están en `Expedition`. El itinerario solo se toca en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings solo en revisión, borrándolos `returnToDraft`. Incidentes y observaciones en estados activos. Start/finish de una actividad, solo en `IN_PROGRESS`. `startActivity` exige predecesores terminados. `finish` de la expedición exige todas las actividades cerradas. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
 
 **`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas, copiados para no exponer `ActivityExecution` mutable.
 

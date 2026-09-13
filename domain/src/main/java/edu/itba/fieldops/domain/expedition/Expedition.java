@@ -172,7 +172,9 @@ public final class Expedition {
     }
 
     public void finish() {
-        transition(ExpeditionStatus.IN_PROGRESS, ExpeditionStatus.FINISHED, "finish");
+        requireStatus(ExpeditionStatus.IN_PROGRESS, "finish");
+        requireAllActivitiesFinished();
+        status = ExpeditionStatus.FINISHED;
     }
 
     public UUID id() {
@@ -271,6 +273,14 @@ public final class Expedition {
     private void requireWindowInsidePeriod(Activity activity) {
         if (!period.contains(activity.window())) {
             throw new IllegalArgumentException("activity window is outside the expedition period");
+        }
+    }
+
+    private void requireAllActivitiesFinished() {
+        for (Activity activity : itinerary.activities()) {
+            if (executionOf(activity.id()).filter(ActivityExecution::isFinished).isEmpty()) {
+                throw new IllegalArgumentException("activity not finished: " + activity.id());
+            }
         }
     }
 
