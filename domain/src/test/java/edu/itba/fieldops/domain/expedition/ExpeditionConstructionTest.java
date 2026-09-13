@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExpeditionConstructionTest {
     private static final Instant DAY = Instant.parse("2026-11-01T08:00:00Z");
-    private static final WorkZone DELTA = new WorkZone("Delta", "Paraná");
+    private static final WorkZone DELTA = new WorkZone("Delta");
 
     @Test
     void draftHoldsObjectivesPeriodZonesAndRestrictions() {
@@ -46,15 +46,6 @@ class ExpeditionConstructionTest {
         expedition.addActivity(measurement());
 
         assertEquals(3, expedition.itinerary().size());
-    }
-
-    @Test
-    void activityZoneMatchesByNameOnly() {
-        Expedition expedition = wetlandDraft();
-
-        expedition.addActivity(activity("sample", new SamplingPolicy(UUID.randomUUID()), 0, 4, new WorkZone("Delta")));
-
-        assertEquals(1, expedition.itinerary().size());
     }
 
     @Test

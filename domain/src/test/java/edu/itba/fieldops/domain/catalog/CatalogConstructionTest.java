@@ -38,8 +38,8 @@ class CatalogConstructionTest {
     }
 
     @Test
-    void permitCoversZoneByName() {
-        Permit permit = new Permit(UUID.randomUUID(), new WorkZone("Delta", "Paraná"), WEEK);
+    void permitCoversMatchingZone() {
+        Permit permit = new Permit(UUID.randomUUID(), new WorkZone("Delta"), WEEK);
 
         assertTrue(permit.covers(new WorkZone("Delta"), WEEK));
     }
