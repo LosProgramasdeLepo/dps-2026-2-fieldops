@@ -21,4 +21,9 @@ public record TimePeriod(Instant start, Instant end) {
         Objects.requireNonNull(other, "other period");
         return !end.isBefore(other.start) && !other.end.isBefore(start);
     }
+
+    public boolean finishesBeforeStartOf(TimePeriod other) {
+        Objects.requireNonNull(other, "other period");
+        return !end.isAfter(other.start);
+    }
 }

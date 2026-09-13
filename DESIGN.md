@@ -4,7 +4,7 @@
 
 **Strategy (`ActivityPolicy`).** Muestreo, medición y tránsito son ejemplos. Cada uno fija duración, riesgo y requisitos. `Activity` guarda id, ventana, zona y predecesores. Otro tipo es otra policy, no otra subclase de `Activity`.
 
-**`Expedition` como agregado.** Itinerario, asignaciones, permisos, warnings y seguimiento se cambian en esta clase. Aprobar o iniciar una actividad es un método del agregado.
+**`Expedition` como agregado.** Sigue siendo la fachada: estados, asignaciones, permisos, warnings y seguimiento. El grafo ordenado de actividades vive en `Itinerary` (alta, baja, orden, dependencias, ciclos y ventanas). `Expedition` solo le aplica el estado y las reglas suyas (zona y período).
 
 **Ids hacia el catálogo.** Personas, vehículos, instrumentos, consumibles y permisos viven afuera. La expedición guarda UUIDs. Si cambia la disponibilidad, el plan no se rearma.
 
@@ -12,7 +12,7 @@
 
 **`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas, copiados para no exponer `ActivityExecution` mutable.
 
-**Invariantes locales.** La ventana de tiempo no puede ser más corta que la duración de la policy. Los predecesores tienen que existir y no ser uno mismo. La zona de la actividad tiene que estar en la expedición. `TimePeriod` y `Quantity` se validan al construirse.
+**Invariantes locales.** La ventana de tiempo no puede ser más corta que la duración de la policy. Los predecesores tienen que existir, no formar ciclos y terminar antes de que empiece la actividad (en el plan y al ejecutar). El orden del itinerario se cambia en `DRAFT` con `reorderActivities`. La zona de la actividad tiene que estar en la expedición. `TimePeriod` y `Quantity` se validan al construirse.
 
 **Errores.** Transición ilegal (`InvalidExpeditionTransition`), no se puede aprobar (`ExpeditionNotApprovable`) y dato inválido (`IllegalArgumentException`).
 

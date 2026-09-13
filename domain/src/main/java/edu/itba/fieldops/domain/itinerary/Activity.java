@@ -6,6 +6,7 @@ import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +67,13 @@ public final class Activity {
 
     public ResourceRequirements requirements() {
         return policy.requirements();
+    }
+
+    Activity withPredecessor(UUID predecessorId) {
+        Objects.requireNonNull(predecessorId, "predecessor id");
+        Set<UUID> next = new HashSet<>(predecessors);
+        next.add(predecessorId);
+        return new Activity(id, name, policy, window, next, zone);
     }
 
     private void requireNoSelfPredecessor() {

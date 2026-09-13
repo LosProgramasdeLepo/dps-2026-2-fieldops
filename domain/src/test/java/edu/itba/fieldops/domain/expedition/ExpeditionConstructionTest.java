@@ -72,6 +72,138 @@ class ExpeditionConstructionTest {
     }
 
     @Test
+    void reordersItineraryInDraft() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        Activity third = measurement();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addActivity(third);
+
+        expedition.reorderActivities(List.of(third.id(), first.id(), second.id()));
+
+        assertEquals(List.of(third.id(), first.id(), second.id()), activityIds(expedition));
+    }
+
+    @Test
+    void rejectsReorderThatDropsOrRepeatsActivities() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.reorderActivities(List.of(first.id(), first.id()))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.reorderActivities(List.of(first.id()))
+        );
+    }
+
+    @Test
+    void rejectsReorderOutsideDraft() {
+        Expedition expedition = wetlandDraft();
+        Activity activity = sampling();
+        expedition.addActivity(activity);
+        expedition.submitForReview();
+
+        assertThrows(
+                InvalidExpeditionTransition.class,
+                () -> expedition.reorderActivities(List.of(activity.id()))
+        );
+    }
+
+    @Test
+    void addsDependencyWhenPredecessorFinishesBefore() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+
+        expedition.addDependency(second.id(), first.id());
+
+        assertTrue(expedition.activityOf(second.id()).predecessors().contains(first.id()));
+    }
+
+    @Test
+    void rejectsCyclicDependency() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        Activity third = measurement();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addActivity(third);
+        expedition.addDependency(second.id(), first.id());
+        expedition.addDependency(third.id(), second.id());
+
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.addDependency(first.id(), third.id())
+        );
+        assertTrue(error.getMessage().contains("cycle"));
+    }
+
+    @Test
+    void rejectsPredecessorThatDoesNotFinishBefore() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity overlapping = activity("overlap", new TransitPolicy(), 3, 5, DELTA);
+        expedition.addActivity(first);
+        expedition.addActivity(overlapping);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.addDependency(overlapping.id(), first.id())
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.addActivity(new Activity(
+                        UUID.randomUUID(),
+                        "late start",
+                        new TransitPolicy(),
+                        window(3, 5),
+                        Set.of(first.id()),
+                        DELTA
+                ))
+        );
+    }
+
+    @Test
+    void cannotStartUntilPredecessorHasFinished() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addDependency(second.id(), first.id());
+        expedition.submitForReview();
+        expedition.approve(ValidationResult.empty());
+        expedition.start();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.startActivity(second.id(), DAY.plusSeconds(4 * 3600L))
+        );
+
+        expedition.startActivity(first.id(), DAY);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> expedition.startActivity(second.id(), DAY.plusSeconds(4 * 3600L))
+        );
+
+        expedition.finishActivity(first.id(), DAY.plusSeconds(4 * 3600L), "site reached");
+        expedition.startActivity(second.id(), DAY.plusSeconds(4 * 3600L));
+
+        assertEquals(2, expedition.executions().size());
+    }
+
+    @Test
     void rejectsAssignmentToUnknownActivity() {
         Expedition expedition = wetlandDraft();
 
@@ -270,5 +402,9 @@ class ExpeditionConstructionTest {
 
     private static TimePeriod window(int fromHour, int toHour) {
         return new TimePeriod(DAY.plusSeconds(fromHour * 3600L), DAY.plusSeconds(toHour * 3600L));
+    }
+
+    private static List<UUID> activityIds(Expedition expedition) {
+        return expedition.itinerary().stream().map(Activity::id).toList();
     }
 }

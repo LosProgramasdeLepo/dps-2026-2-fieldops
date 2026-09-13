@@ -30,6 +30,23 @@ class ActivityPolicyConstructionTest {
     }
 
     @Test
+    void rejectsSelfAsPredecessor() {
+        UUID id = UUID.randomUUID();
+
+        assertThrows(IllegalArgumentException.class, () -> new Activity(
+                id,
+                "loop",
+                new TransitPolicy(),
+                new TimePeriod(
+                        Instant.parse("2026-11-01T08:00:00Z"),
+                        Instant.parse("2026-11-01T10:00:00Z")
+                ),
+                Set.of(id),
+                new WorkZone("Delta")
+        ));
+    }
+
+    @Test
     void rejectsWindowShorterThanEstimate() {
         Instant start = Instant.parse("2026-11-01T08:00:00Z");
 

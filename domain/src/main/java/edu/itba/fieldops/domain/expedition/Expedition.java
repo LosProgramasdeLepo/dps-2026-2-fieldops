@@ -1,6 +1,7 @@
 package edu.itba.fieldops.domain.expedition;
 
 import edu.itba.fieldops.domain.itinerary.Activity;
+import edu.itba.fieldops.domain.itinerary.Itinerary;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
 import edu.itba.fieldops.domain.tracking.ActivityExecution;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class Expedition {
@@ -22,7 +24,7 @@ public final class Expedition {
     private final List<WorkZone> zones;
     private final List<UUID> responsibles;
     private final List<Restriction> restrictions;
-    private final List<Activity> itinerary;
+    private final Itinerary itinerary;
     private final List<Assignment> assignments;
     private final List<UUID> permits;
     private final List<AcceptedWarning> acceptedWarnings;
@@ -56,7 +58,7 @@ public final class Expedition {
         this.zones = copyRequired(zones, "zones");
         this.responsibles = copyRequired(responsibles, "responsibles");
         this.restrictions = List.copyOf(restrictions);
-        this.itinerary = new ArrayList<>();
+        this.itinerary = new Itinerary();
         this.assignments = new ArrayList<>();
         this.permits = new ArrayList<>();
         this.acceptedWarnings = new ArrayList<>();
@@ -69,26 +71,31 @@ public final class Expedition {
     public void addActivity(Activity activity) {
         requireStatus(ExpeditionStatus.DRAFT, "add activity");
         Objects.requireNonNull(activity, "activity");
-        requireUnknownActivity(activity.id());
         requireKnownZone(activity.zone());
         requireWindowInsidePeriod(activity);
-        requireKnownPredecessors(activity);
         itinerary.add(activity);
     }
 
     public void removeActivity(UUID activityId) {
         requireStatus(ExpeditionStatus.DRAFT, "remove activity");
-        requireUnusedPredecessor(activityId);
-        if (!itinerary.removeIf(activity -> activity.id().equals(activityId))) {
-            throw new IllegalArgumentException("unknown activity: " + activityId);
-        }
+        itinerary.remove(activityId);
         assignments.removeIf(assignment -> assignment.activityId().equals(activityId));
+    }
+
+    public void reorderActivities(List<UUID> orderedIds) {
+        requireStatus(ExpeditionStatus.DRAFT, "reorder activities");
+        itinerary.reorder(orderedIds);
+    }
+
+    public void addDependency(UUID activityId, UUID predecessorId) {
+        requireStatus(ExpeditionStatus.DRAFT, "add dependency");
+        itinerary.addDependency(activityId, predecessorId);
     }
 
     public void addAssignment(Assignment assignment) {
         requireEditable("assign resources");
         Objects.requireNonNull(assignment, "assignment");
-        requireKnownActivity(assignment.activityId());
+        itinerary.activityOf(assignment.activityId());
         requireUnknownAssignment(assignment);
         assignments.add(assignment);
     }
@@ -121,14 +128,17 @@ public final class Expedition {
 
     public void startActivity(UUID activityId, Instant at) {
         requireStatus(ExpeditionStatus.IN_PROGRESS, "start activity");
-        requireKnownActivity(activityId);
+        Activity activity = itinerary.activityOf(activityId);
         requireNotStarted(activityId);
+        requirePredecessorsFinished(activity, at);
         executions.add(new ActivityExecution(activityId, at));
     }
 
     public void finishActivity(UUID activityId, Instant at, String result) {
         requireStatus(ExpeditionStatus.IN_PROGRESS, "finish activity");
-        executionOf(activityId).finish(at, result);
+        executionOf(activityId)
+                .orElseThrow(() -> new IllegalArgumentException("activity not started: " + activityId))
+                .finish(at, result);
     }
 
     public void submitForReview() {
@@ -194,7 +204,7 @@ public final class Expedition {
     }
 
     public List<Activity> itinerary() {
-        return List.copyOf(itinerary);
+        return itinerary.activities();
     }
 
     public List<Assignment> assignments() {
@@ -221,11 +231,8 @@ public final class Expedition {
         return List.copyOf(executions);
     }
 
-    public void activityOf(UUID activityId) {
-        itinerary.stream()
-                .filter(activity -> activity.id().equals(activityId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("unknown activity: " + activityId));
+    public Activity activityOf(UUID activityId) {
+        return itinerary.activityOf(activityId);
     }
 
     private void requireApprovable(ValidationResult validation) {
@@ -242,12 +249,6 @@ public final class Expedition {
         }
     }
 
-    private void requireUnknownActivity(UUID activityId) {
-        if (itinerary.stream().anyMatch(activity -> activity.id().equals(activityId))) {
-            throw new IllegalArgumentException("duplicate activity: " + activityId);
-        }
-    }
-
     private void requireUnknownAssignment(Assignment assignment) {
         if (assignments.contains(assignment)) {
             throw new IllegalArgumentException("duplicate assignment");
@@ -259,10 +260,6 @@ public final class Expedition {
         if (accepted) {
             throw new IllegalArgumentException("warning already accepted: " + warning.issue().code());
         }
-    }
-
-    private void requireKnownActivity(UUID activityId) {
-        activityOf(activityId);
     }
 
     private void requireKnownZone(WorkZone zone) {
@@ -277,29 +274,28 @@ public final class Expedition {
         }
     }
 
-    private void requireKnownPredecessors(Activity activity) {
-        activity.predecessors().forEach(this::requireKnownActivity);
-    }
-
-    private void requireUnusedPredecessor(UUID activityId) {
-        boolean used = itinerary.stream().anyMatch(activity -> activity.predecessors().contains(activityId));
-        if (used) {
-            throw new IllegalArgumentException("activity is a predecessor of another");
+    private void requirePredecessorsFinished(Activity activity, Instant at) {
+        for (UUID predecessorId : activity.predecessors()) {
+            boolean ready = executionOf(predecessorId)
+                    .filter(ActivityExecution::isFinished)
+                    .filter(execution -> !at.isBefore(execution.finishedAt()))
+                    .isPresent();
+            if (!ready) {
+                throw new IllegalArgumentException("predecessor must finish before activity starts: " + predecessorId);
+            }
         }
     }
 
     private void requireNotStarted(UUID activityId) {
-        boolean started = executions.stream().anyMatch(execution -> execution.activityId().equals(activityId));
-        if (started) {
+        if (executionOf(activityId).isPresent()) {
             throw new IllegalArgumentException("activity already started: " + activityId);
         }
     }
 
-    private ActivityExecution executionOf(UUID activityId) {
+    private Optional<ActivityExecution> executionOf(UUID activityId) {
         return executions.stream()
                 .filter(execution -> execution.activityId().equals(activityId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("activity not started: " + activityId));
+                .findFirst();
     }
 
     private void transition(ExpeditionStatus from, ExpeditionStatus to, String action) {
