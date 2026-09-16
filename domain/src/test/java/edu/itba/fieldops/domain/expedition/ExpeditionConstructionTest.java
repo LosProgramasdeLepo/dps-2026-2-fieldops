@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -435,6 +436,18 @@ class ExpeditionConstructionTest {
 
         assertEquals(1, expedition.executions().size());
         assertTrue(expedition.executions().getFirst().isFinished());
+    }
+
+    @Test
+    void finishingAReturnedExecutionDoesNotChangeTheExpedition() {
+        Expedition expedition = approvedWithActivity();
+        Activity activity = expedition.itinerary().getFirst();
+        expedition.start();
+        expedition.startActivity(activity.id(), DAY);
+
+        expedition.executions().getFirst().finish(DAY.plusSeconds(3600), "samples stored");
+
+        assertFalse(expedition.executions().getFirst().isFinished());
     }
 
     private static Expedition approvedWithActivity() {

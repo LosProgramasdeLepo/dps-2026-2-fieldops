@@ -18,7 +18,7 @@
 
 **Quién ocupa recursos.** `IN_REVIEW`, `APPROVED`, `IN_PROGRESS` y `SUSPENDED`. `DRAFT` no reserva. `FINISHED` libera personas y equipo; el stock del catálogo es el depósito actual, no se descuenta lo ya consumido.
 
-**Validación fuera del agregado.** `approve` recibe `ValidationResult`; no lo calcula. `ExpeditionValidator` llama las reglas del enunciado, cada una con lo que usa: todas reciben expedición y catálogo; superposición y stock también las expediciones que ocupan. Otra regla es otra clase y una llamada más. Las demás expediciones entran como lista; se descarta el self y las que no ocupan. Un id ausente del catálogo es `RESOURCE`; disponibilidad y stock no se reportan otra vez para ese id.
+**Validación fuera del agregado.** `approve` recibe `ValidationResult`; no lo calcula. `ExpeditionValidator` llama las reglas del enunciado, cada una con lo que usa: todas reciben expedición y catálogo; superposición y stock también las expediciones que ocupan. Otra regla es otra clase y una llamada más. Las demás expediciones entran como lista; se descarta el self y las que no ocupan. Un id ausente del catálogo es `RESOURCE`. Disponibilidad, stock, certificación (si no hay persona conocida que evaluar) y capacidad (si hay un vehículo desconocido) no se reportan otra vez para ese id.
 
 **Severidad.** Superposición, disponibilidad de catálogo, stock, certificación, permiso y recurso faltante o desconocido son `CRITICAL`. Exceso de capacidad es `WARNING`: se puede justificar (otro viaje, trailer). Capacidad de una actividad = suma de los vehículos asignados a esa actividad; pasajeros = personas asignadas a la misma.
 
@@ -28,7 +28,7 @@
 
 **Replanificación.** `Replanner` arma la alternativa sobre el agregado: cancelar actividad, correr ventanas (`delay`) y soltar asignaciones inválidas. Después rellena huecos con el sugeridor. Cancelar y atrasar tocan el itinerario: solo `DRAFT`. Reemplazar indisponibles también en `IN_REVIEW`. Si el plan ya está en revisión, `returnToDraft` y recién ahí se atrasan ventanas. `delay` corre la actividad y empuja dependientes (por el grafo, no por el orden de la lista) lo justo para que el predecesor termine antes; si alguna ventana quedaría fuera del período, no aplica nada.
 
-**`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas, copiados para no exponer `ActivityExecution` mutable.
+**`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas. `ActivityExecution` es inmutable: `finish` devuelve otra instancia; el agregado reemplaza la suya. `executions()` no deja terminar una actividad por fuera de `finishActivity`.
 
 **Invariantes locales.** La ventana de tiempo no puede ser más corta que la duración de la policy. Los predecesores tienen que existir, no formar ciclos y terminar antes de que empiece la actividad (en el plan y al ejecutar). El orden del itinerario se cambia en `DRAFT` con `reorderActivities`. La zona de la actividad tiene que estar en la expedición. `TimePeriod` y `Quantity` se validan al construirse.
 

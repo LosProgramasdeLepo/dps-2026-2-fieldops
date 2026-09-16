@@ -23,6 +23,12 @@ public final class CapacityRule {
 
     private static Optional<ValidationIssue> issueFor(Expedition expedition, ResourceCatalog catalog, Activity activity) {
         List<Assignment> assigned = expedition.assignmentsOf(activity.id());
+        boolean unknownVehicle = assigned.stream()
+                .anyMatch(assignment -> assignment instanceof VehicleAssignment vehicle
+                        && catalog.vehicle(vehicle.vehicleId()).isEmpty());
+        if (unknownVehicle) {
+            return Optional.empty();
+        }
         List<Vehicle> vehicles = assigned.stream()
                 .flatMap(assignment -> switch (assignment) {
                     case VehicleAssignment vehicle -> catalog.vehicle(vehicle.vehicleId()).stream();

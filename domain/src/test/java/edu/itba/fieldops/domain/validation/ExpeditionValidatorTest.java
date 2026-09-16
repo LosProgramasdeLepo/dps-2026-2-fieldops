@@ -178,6 +178,8 @@ class ExpeditionValidatorTest {
         ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
+        assertNo(result, "CERTIFICATION");
+        assertNo(result, "AVAILABILITY");
     }
 
     @Test
@@ -241,6 +243,18 @@ class ExpeditionValidatorTest {
 
         assertIssue(result, IssueSeverity.WARNING, "CAPACITY");
         assertFalse(result.hasCritical());
+    }
+
+    @Test
+    void unknownVehicleDoesNotEmitCapacity() {
+        TransitPlan plan = crowdedTransit();
+        Activity activity = plan.expedition.itinerary().getFirst();
+        plan.expedition.addAssignment(new VehicleAssignment(activity.id(), UUID.randomUUID()));
+
+        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+
+        assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
+        assertNo(result, "CAPACITY");
     }
 
     @Test

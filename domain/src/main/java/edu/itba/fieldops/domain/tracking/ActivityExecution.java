@@ -9,23 +9,29 @@ import java.util.UUID;
 public final class ActivityExecution {
     private final UUID activityId;
     private final Instant startedAt;
-    private Instant finishedAt;
-    private String result;
+    private final Instant finishedAt;
+    private final String result;
 
     public ActivityExecution(UUID activityId, Instant startedAt) {
-        this.activityId = Objects.requireNonNull(activityId, "activity id");
-        this.startedAt = Objects.requireNonNull(startedAt, "started at");
+        this(activityId, startedAt, null, null);
     }
 
-    public void finish(Instant finishedAt, String result) {
+    private ActivityExecution(UUID activityId, Instant startedAt, Instant finishedAt, String result) {
+        this.activityId = Objects.requireNonNull(activityId, "activity id");
+        this.startedAt = Objects.requireNonNull(startedAt, "started at");
+        this.finishedAt = finishedAt;
+        this.result = result;
+    }
+
+    public ActivityExecution finish(Instant finishedAt, String result) {
         if (this.finishedAt != null) {
             throw new InvalidActivityExecution("activity already finished: " + activityId);
         }
+        Objects.requireNonNull(finishedAt, "finished at");
         if (finishedAt.isBefore(startedAt)) {
             throw new IllegalArgumentException("finish must not be before start");
         }
-        this.finishedAt = finishedAt;
-        this.result = Texts.required(result, "result");
+        return new ActivityExecution(activityId, startedAt, finishedAt, Texts.required(result, "result"));
     }
 
     public UUID activityId() {

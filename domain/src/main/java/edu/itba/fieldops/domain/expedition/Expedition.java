@@ -157,9 +157,14 @@ public final class Expedition {
 
     public void finishActivity(UUID activityId, Instant at, String result) {
         requireStatus(ExpeditionStatus.IN_PROGRESS, "finish activity");
-        executionOf(activityId)
-                .orElseThrow(() -> new IllegalArgumentException("activity not started: " + activityId))
-                .finish(at, result);
+        for (int index = 0; index < executions.size(); index++) {
+            ActivityExecution execution = executions.get(index);
+            if (execution.activityId().equals(activityId)) {
+                executions.set(index, execution.finish(at, result));
+                return;
+            }
+        }
+        throw new IllegalArgumentException("activity not started: " + activityId);
     }
 
     public void submitForReview() {
