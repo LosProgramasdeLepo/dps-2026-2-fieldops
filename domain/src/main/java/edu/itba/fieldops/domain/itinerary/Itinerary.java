@@ -1,5 +1,9 @@
 package edu.itba.fieldops.domain.itinerary;
 
+import edu.itba.fieldops.domain.shared.TimePeriod;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +51,33 @@ public final class Itinerary {
         requireAcyclic(updated);
         requirePredecessorsFinishBefore(updated);
         replace(updated);
+    }
+
+    public void delay(UUID activityId, Duration delay) {
+        List<Activity> next = delayed(activityId, delay);
+        activities.clear();
+        activities.addAll(next);
+    }
+
+    public List<Activity> delayed(UUID activityId, Duration delay) {
+        Objects.requireNonNull(delay, "delay");
+        List<Activity> next = new ArrayList<>(activities);
+        Activity target = in(next, activityId);
+        next.set(indexIn(next, activityId), target.withWindow(target.window().shifted(delay)));
+        boolean moved;
+        do {
+            moved = false;
+            for (int index = 0; index < next.size(); index++) {
+                Activity activity = next.get(index);
+                Instant ready = readyToStart(activity, next);
+                if (activity.window().start().isBefore(ready)) {
+                    Duration length = Duration.between(activity.window().start(), activity.window().end());
+                    next.set(index, activity.withWindow(new TimePeriod(ready, ready.plus(length))));
+                    moved = true;
+                }
+            }
+        } while (moved);
+        return List.copyOf(next);
     }
 
     public Activity activityOf(UUID activityId) {
@@ -104,13 +135,32 @@ public final class Itinerary {
         }
     }
 
+    private Instant readyToStart(Activity activity, List<Activity> source) {
+        Instant ready = activity.window().start();
+        for (UUID predecessorId : activity.predecessors()) {
+            Instant end = in(source, predecessorId).window().end();
+            if (end.isAfter(ready)) {
+                ready = end;
+            }
+        }
+        return ready;
+    }
+
+    private static Activity in(List<Activity> source, UUID activityId) {
+        return source.get(indexIn(source, activityId));
+    }
+
     private void replace(Activity updated) {
         activities.set(indexOf(updated.id()), updated);
     }
 
     private int indexOf(UUID activityId) {
-        for (int index = 0; index < activities.size(); index++) {
-            if (activities.get(index).id().equals(activityId)) {
+        return indexIn(activities, activityId);
+    }
+
+    private static int indexIn(List<Activity> source, UUID activityId) {
+        for (int index = 0; index < source.size(); index++) {
+            if (source.get(index).id().equals(activityId)) {
                 return index;
             }
         }

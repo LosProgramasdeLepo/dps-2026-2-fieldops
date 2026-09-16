@@ -69,6 +69,10 @@ public final class Activity {
         return policy.requirements();
     }
 
+    Activity withWindow(TimePeriod window) {
+        return new Activity(id, name, policy, window, predecessors, zone);
+    }
+
     Activity withPredecessor(UUID predecessorId) {
         Objects.requireNonNull(predecessorId, "predecessor id");
         Set<UUID> next = new HashSet<>(predecessors);

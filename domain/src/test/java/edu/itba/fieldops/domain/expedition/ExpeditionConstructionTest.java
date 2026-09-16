@@ -14,6 +14,7 @@ import edu.itba.fieldops.domain.validation.ValidationIssue;
 import edu.itba.fieldops.domain.validation.ValidationResult;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -352,6 +353,62 @@ class ExpeditionConstructionTest {
 
         assertEquals(1, expedition.itinerary().size());
         assertEquals("Camp to site", expedition.itinerary().getFirst().name());
+    }
+
+    @Test
+    void delayShiftsDependentActivityWindows() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addDependency(second.id(), first.id());
+
+        expedition.delay(first.id(), Duration.ofHours(2));
+
+        assertEquals(window(2, 6), expedition.activityOf(first.id()).window());
+        assertEquals(window(6, 8), expedition.activityOf(second.id()).window());
+    }
+
+    @Test
+    void delayShiftsDependentsRegardlessOfItineraryOrder() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        Activity third = measurement();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addActivity(third);
+        expedition.addDependency(second.id(), first.id());
+        expedition.addDependency(third.id(), second.id());
+        expedition.reorderActivities(List.of(third.id(), second.id(), first.id()));
+
+        expedition.delay(first.id(), Duration.ofHours(2));
+
+        assertEquals(window(2, 6), expedition.activityOf(first.id()).window());
+        assertEquals(window(6, 8), expedition.activityOf(second.id()).window());
+        assertEquals(window(8, 11), expedition.activityOf(third.id()).window());
+    }
+
+    @Test
+    void delayOutsidePeriodLeavesWindowsUnchanged() {
+        Expedition expedition = Expedition.draft(
+                UUID.randomUUID(),
+                List.of(new Objective("Map wetland biodiversity")),
+                window(0, 10),
+                List.of(DELTA),
+                List.of(UUID.randomUUID()),
+                List.of(new Restriction("No night work"))
+        );
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addDependency(second.id(), first.id());
+
+        assertThrows(IllegalArgumentException.class, () -> expedition.delay(first.id(), Duration.ofHours(6)));
+        assertEquals(window(0, 4), expedition.activityOf(first.id()).window());
+        assertEquals(window(4, 6), expedition.activityOf(second.id()).window());
     }
 
     @Test

@@ -10,6 +10,7 @@ import edu.itba.fieldops.domain.tracking.Observation;
 import edu.itba.fieldops.domain.validation.ValidationIssue;
 import edu.itba.fieldops.domain.validation.ValidationResult;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +99,26 @@ public final class Expedition {
         itinerary.activityOf(assignment.activityId());
         requireUnknownAssignment(assignment);
         assignments.add(assignment);
+    }
+
+    public void removeAssignment(Assignment assignment) {
+        requireEditable("unassign resources");
+        Objects.requireNonNull(assignment, "assignment");
+        if (!assignments.remove(assignment)) {
+            throw new IllegalArgumentException("unknown assignment");
+        }
+    }
+
+    public void delay(UUID activityId, Duration delay) {
+        requireStatus(ExpeditionStatus.DRAFT, "delay activity");
+        Objects.requireNonNull(delay, "delay");
+        if (delay.isNegative()) {
+            throw new IllegalArgumentException("delay must not be negative");
+        }
+        for (Activity activity : itinerary.delayed(activityId, delay)) {
+            requireWindowInsidePeriod(activity);
+        }
+        itinerary.delay(activityId, delay);
     }
 
     public void addPermit(UUID permitId) {
@@ -242,6 +263,14 @@ public final class Expedition {
 
     public Activity activityOf(UUID activityId) {
         return itinerary.activityOf(activityId);
+    }
+
+    public List<Expedition> occupyingPeers(List<Expedition> others) {
+        Objects.requireNonNull(others, "other expeditions");
+        return List.copyOf(others).stream()
+                .filter(peer -> !peer.id().equals(id))
+                .filter(peer -> peer.status().occupiesResources())
+                .toList();
     }
 
     private void requireApprovable(ValidationResult validation) {

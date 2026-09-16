@@ -8,7 +8,7 @@
 
 **Ids hacia el catálogo.** Personas, vehículos, instrumentos, consumibles y permisos viven afuera. La expedición guarda UUIDs. Si cambia la disponibilidad, el plan no se rearma.
 
-**Catálogo de recursos (`ResourceCatalog`).** Una clase: alta, unicidad, lookup y listado. El validador y el sugeridor la usan directa. Las certificaciones viven en la persona, no en el catálogo. El listado respeta el orden de alta: el sugeridor toma el primero que sirve.
+**Catálogo de recursos (`ResourceCatalog`).** Una clase: alta, unicidad, lookup y listado. El validador, el sugeridor y el replanner la usan directa. Las certificaciones viven en la persona, no en el catálogo. El listado respeta el orden de alta: el sugeridor toma el primero que sirve.
 
 **Persona como recurso temporal.** Se asigna a una actividad, no a la expedición entera. El enunciado no limita a una expedición a la vez. El choque es de ventanas. Ventanas adyacentes (fin = inicio) no se solapan: mañana y tarde es válido. `TimePeriod.overlaps` sigue esa regla.
 
@@ -25,6 +25,8 @@
 **Estados en el enum.** Las transiciones están en `Expedition`. El itinerario solo se toca en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings solo en revisión, borrándolos `returnToDraft`. Incidentes y observaciones en estados activos. Start/finish de una actividad, solo en `IN_PROGRESS`. `startActivity` exige predecesores terminados. `finish` de la expedición exige todas las actividades cerradas. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
 
 **Proponer asignaciones.** `AssignmentSuggester` no muta el plan: devuelve huecos (certificación, vehículo, instrumento) con el primer recurso del catálogo libre en la ventana. No choca con asignaciones propias ni con expediciones que ocupan. `addAssignment` realiza. Una sola heurística; no hay estrategia.
+
+**Replanificación.** `Replanner` arma la alternativa sobre el agregado: cancelar actividad, correr ventanas (`delay`) y soltar asignaciones inválidas. Después rellena huecos con el sugeridor. Cancelar y atrasar tocan el itinerario: solo `DRAFT`. Reemplazar indisponibles también en `IN_REVIEW`. Si el plan ya está en revisión, `returnToDraft` y recién ahí se atrasan ventanas. `delay` corre la actividad y empuja dependientes (por el grafo, no por el orden de la lista) lo justo para que el predecesor termine antes; si alguna ventana quedaría fuera del período, no aplica nada.
 
 **`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas, copiados para no exponer `ActivityExecution` mutable.
 
@@ -45,7 +47,3 @@
 **State pattern.** Con el enum y `requireStatus` alcanza.
 
 **Inyectar reglas / interfaz `ValidationRule`.** El conjunto lo fija el enunciado. Cuatro reglas miran solo el plan y el catálogo; dos también a las pares. Un contrato único obliga a parámetros de más o a overloads. El validador las llama; otra regla se agrega ahí.
-
-## No aplicadas
-
-**Replanificación automática.** `returnToDraft` permite rearmar a mano. Construir una alternativa ante incidente o atraso es un caso de uso aparte, todavía sin dos variantes.

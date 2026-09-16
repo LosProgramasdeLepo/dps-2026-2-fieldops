@@ -2,8 +2,10 @@ package edu.itba.fieldops.domain.shared;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +40,15 @@ class TimePeriodTest {
         assertTrue(week.contains(morning));
         assertTrue(week.contains(week));
         assertFalse(morning.contains(week));
+    }
+
+    @Test
+    void shiftedKeepsLength() {
+        TimePeriod morning = hours(0, 4);
+
+        TimePeriod delayed = morning.shifted(Duration.ofHours(2));
+
+        assertEquals(hours(2, 6), delayed);
     }
 
     @Test

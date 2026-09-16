@@ -1,5 +1,6 @@
 package edu.itba.fieldops.domain.shared;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -25,5 +26,10 @@ public record TimePeriod(Instant start, Instant end) {
     public boolean finishesBeforeStartOf(TimePeriod other) {
         Objects.requireNonNull(other, "other period");
         return !end.isAfter(other.start);
+    }
+
+    public TimePeriod shifted(Duration delay) {
+        Objects.requireNonNull(delay, "delay");
+        return new TimePeriod(start.plus(delay), end.plus(delay));
     }
 }
