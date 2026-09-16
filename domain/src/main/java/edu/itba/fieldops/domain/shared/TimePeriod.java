@@ -19,7 +19,7 @@ public record TimePeriod(Instant start, Instant end) {
 
     public boolean overlaps(TimePeriod other) {
         Objects.requireNonNull(other, "other period");
-        return !end.isBefore(other.start) && !other.end.isBefore(start);
+        return end.isAfter(other.start) && other.end.isAfter(start);
     }
 
     public boolean finishesBeforeStartOf(TimePeriod other) {

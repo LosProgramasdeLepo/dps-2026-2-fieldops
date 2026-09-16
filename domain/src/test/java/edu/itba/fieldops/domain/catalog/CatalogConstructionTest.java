@@ -22,7 +22,7 @@ class CatalogConstructionTest {
         Certification sampling = new Certification(UUID.randomUUID(), "Sampling");
         Person person = new Person(UUID.randomUUID(), "Ada", List.of(sampling), Availability.always());
 
-        assertTrue(person.holds(sampling));
+        assertTrue(person.holds(sampling.id()));
         assertTrue(person.availableDuring(WEEK));
     }
 

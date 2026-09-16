@@ -32,8 +32,9 @@ public final class Person {
         return certifications;
     }
 
-    public boolean holds(Certification certification) {
-        return certifications.stream().anyMatch(held -> held.id().equals(certification.id()));
+    public boolean holds(UUID certificationId) {
+        Objects.requireNonNull(certificationId, "certification id");
+        return certifications.stream().anyMatch(held -> held.id().equals(certificationId));
     }
 
     public boolean availableDuring(TimePeriod period) {

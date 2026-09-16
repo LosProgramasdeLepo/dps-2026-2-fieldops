@@ -213,6 +213,13 @@ public final class Expedition {
         return List.copyOf(assignments);
     }
 
+    public List<Assignment> assignmentsOf(UUID activityId) {
+        Objects.requireNonNull(activityId, "activity id");
+        return assignments.stream()
+                .filter(assignment -> assignment.activityId().equals(activityId))
+                .toList();
+    }
+
     public List<UUID> permits() {
         return List.copyOf(permits);
     }
