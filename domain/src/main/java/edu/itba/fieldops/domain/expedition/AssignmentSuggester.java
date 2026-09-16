@@ -12,11 +12,13 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public final class AssignmentSuggester {
+    private AssignmentSuggester() {
+    }
+
     public static List<Assignment> suggest(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
-        List<TemporalBooking> taken = new ArrayList<>();
-        taken.addAll(TemporalBooking.of(expedition));
+        List<TemporalBooking> taken = new ArrayList<>(TemporalBooking.of(expedition));
         for (Expedition peer : expedition.occupyingPeers(others)) {
             taken.addAll(TemporalBooking.of(peer));
         }
@@ -57,8 +59,8 @@ public final class AssignmentSuggester {
             catalog.people().stream()
                     .filter(person -> person.holds(certificationId))
                     .filter(person -> person.availableDuring(window))
-                    .filter(person -> free(taken, TemporalBooking.Kind.PERSON, person.id(), window))
                     .map(Person::id)
+                    .filter(id -> free(taken, TemporalBooking.Kind.PERSON, id, window))
                     .findFirst()
                     .ifPresent(personId -> take(suggestions, current, taken, new PersonAssignment(activity.id(), personId), window));
         }

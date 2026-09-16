@@ -135,7 +135,7 @@ public final class Itinerary {
         }
     }
 
-    private Instant readyToStart(Activity activity, List<Activity> source) {
+    private static Instant readyToStart(Activity activity, List<Activity> source) {
         Instant ready = activity.window().start();
         for (UUID predecessorId : activity.predecessors()) {
             Instant end = in(source, predecessorId).window().end();

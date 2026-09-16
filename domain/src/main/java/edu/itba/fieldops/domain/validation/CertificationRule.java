@@ -12,6 +12,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class CertificationRule {
+    private CertificationRule() {
+    }
+
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
         return expedition.itinerary().stream()
                 .flatMap(activity -> activity.requirements().certifications().stream()

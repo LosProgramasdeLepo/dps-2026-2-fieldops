@@ -11,6 +11,9 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public final class PermitRule {
+    private PermitRule() {
+    }
+
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
         List<AttachedPermit> attached = expedition.permits().stream()
                 .map(permitId -> new AttachedPermit(permitId, catalog.permit(permitId)))

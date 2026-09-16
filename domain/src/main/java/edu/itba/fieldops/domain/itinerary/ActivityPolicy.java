@@ -4,7 +4,7 @@ import edu.itba.fieldops.domain.shared.RiskLevel;
 
 import java.time.Duration;
 
-public interface ActivityPolicy {
+public sealed interface ActivityPolicy permits SamplingPolicy, MeasurementPolicy, TransitPolicy {
     Duration estimatedDuration();
 
     RiskLevel risk();

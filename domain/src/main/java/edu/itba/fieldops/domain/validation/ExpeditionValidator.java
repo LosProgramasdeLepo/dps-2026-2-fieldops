@@ -8,7 +8,10 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 public final class ExpeditionValidator {
-    public ValidationResult validate(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
+    private ExpeditionValidator() {
+    }
+
+    public static ValidationResult validate(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
         List<Expedition> occupying = expedition.occupyingPeers(others);

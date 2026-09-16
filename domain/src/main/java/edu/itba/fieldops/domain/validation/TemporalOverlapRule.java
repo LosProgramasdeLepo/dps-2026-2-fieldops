@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public final class TemporalOverlapRule {
+    private TemporalOverlapRule() {
+    }
+
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
         List<TemporalBooking> own = TemporalBooking.of(expedition);
         Stream<ValidationIssue> unavailable = own.stream()

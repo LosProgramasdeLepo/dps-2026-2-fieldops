@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class StockRule {
+    private StockRule() {
+    }
+
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
         Map<UUID, Quantity> needed = Stream.concat(Stream.of(expedition), occupying.stream())
                 .map(Expedition::assignments)

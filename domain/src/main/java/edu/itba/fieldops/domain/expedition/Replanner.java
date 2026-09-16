@@ -10,6 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class Replanner {
+    private Replanner() {
+    }
+
     public static void cancel(Expedition expedition, UUID activityId, ResourceCatalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");

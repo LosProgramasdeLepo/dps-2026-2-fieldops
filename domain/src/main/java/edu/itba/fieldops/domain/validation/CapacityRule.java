@@ -14,6 +14,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public final class CapacityRule {
+    private CapacityRule() {
+    }
+
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
         return expedition.itinerary().stream()
                 .map(activity -> issueFor(expedition, catalog, activity))

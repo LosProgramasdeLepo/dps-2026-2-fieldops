@@ -38,13 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExpeditionValidatorTest {
     private static final Instant DAY = Instant.parse("2026-11-01T08:00:00Z");
     private static final WorkZone DELTA = new WorkZone("Delta");
-    private static final ExpeditionValidator VALIDATOR = new ExpeditionValidator();
 
     @Test
     void validSamplingPlanHasNoIssues() {
         SamplingPlan plan = samplingPlan(0, 4);
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertTrue(result.issues().isEmpty());
     }
@@ -55,7 +54,7 @@ class ExpeditionValidatorTest {
         Expedition afternoon = samplingOn(morning, 4, 8);
         morning.expedition.submitForReview();
 
-        ValidationResult result = VALIDATOR.validate(afternoon, morning.catalog, List.of(morning.expedition));
+        ValidationResult result = ExpeditionValidator.validate(afternoon, morning.catalog, List.of(morning.expedition));
 
         assertTrue(result.issues().isEmpty());
     }
@@ -66,7 +65,7 @@ class ExpeditionValidatorTest {
         Expedition second = samplingOn(first, 0, 4);
         first.expedition.submitForReview();
 
-        ValidationResult result = VALIDATOR.validate(second, first.catalog, List.of(first.expedition));
+        ValidationResult result = ExpeditionValidator.validate(second, first.catalog, List.of(first.expedition));
 
         assertIssue(result, IssueSeverity.CRITICAL, "OVERLAP");
     }
@@ -76,7 +75,7 @@ class ExpeditionValidatorTest {
         SamplingPlan first = samplingPlan(0, 4);
         Expedition second = samplingOn(first, 0, 4);
 
-        ValidationResult result = VALIDATOR.validate(second, first.catalog, List.of(first.expedition));
+        ValidationResult result = ExpeditionValidator.validate(second, first.catalog, List.of(first.expedition));
 
         assertNo(result, "OVERLAP");
     }
@@ -87,7 +86,7 @@ class ExpeditionValidatorTest {
         Expedition second = samplingOn(first, 0, 4);
         finish(first.expedition, first.activity);
 
-        ValidationResult result = VALIDATOR.validate(second, first.catalog, List.of(first.expedition));
+        ValidationResult result = ExpeditionValidator.validate(second, first.catalog, List.of(first.expedition));
 
         assertEquals(ExpeditionStatus.FINISHED, first.expedition.status());
         assertNo(result, "OVERLAP");
@@ -100,7 +99,7 @@ class ExpeditionValidatorTest {
         plan.expedition.addActivity(later);
         plan.expedition.addAssignment(new PersonAssignment(later.id(), plan.person.id()));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertNo(result, "OVERLAP");
     }
@@ -112,7 +111,7 @@ class ExpeditionValidatorTest {
         plan.expedition.addActivity(later);
         plan.expedition.addAssignment(new PersonAssignment(later.id(), plan.person.id()));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "OVERLAP");
     }
@@ -128,7 +127,7 @@ class ExpeditionValidatorTest {
         );
         SamplingPlan plan = samplingPlan(person, certification, 4, 8);
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "AVAILABILITY");
     }
@@ -143,7 +142,7 @@ class ExpeditionValidatorTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(permit);
 
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
     }
@@ -162,7 +161,7 @@ class ExpeditionValidatorTest {
         catalog.add(person);
         catalog.add(permit);
 
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
         assertNo(result, "CERTIFICATION");
@@ -175,7 +174,7 @@ class ExpeditionValidatorTest {
         plan.expedition.addActivity(extra);
         plan.expedition.addAssignment(new PersonAssignment(extra.id(), UUID.randomUUID()));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
         assertNo(result, "CERTIFICATION");
@@ -191,7 +190,7 @@ class ExpeditionValidatorTest {
         plan.expedition.addActivity(extra);
         plan.expedition.addAssignment(new PersonAssignment(extra.id(), unqualified.id()));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "CERTIFICATION");
     }
@@ -203,7 +202,7 @@ class ExpeditionValidatorTest {
         plan.catalog.add(vials);
         plan.expedition.addAssignment(new ConsumableAssignment(plan.activity.id(), vials.id(), new Quantity(15)));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "STOCK");
     }
@@ -218,7 +217,7 @@ class ExpeditionValidatorTest {
         Expedition second = samplingOn(first, 4, 8);
         second.addAssignment(new ConsumableAssignment(second.itinerary().getFirst().id(), vials.id(), new Quantity(5)));
 
-        ValidationResult result = VALIDATOR.validate(second, first.catalog, List.of(first.expedition));
+        ValidationResult result = ExpeditionValidator.validate(second, first.catalog, List.of(first.expedition));
 
         assertIssue(result, IssueSeverity.CRITICAL, "STOCK");
     }
@@ -230,7 +229,7 @@ class ExpeditionValidatorTest {
         plan.catalog.add(vials);
         plan.expedition.addAssignment(new ConsumableAssignment(plan.activity.id(), vials.id(), new Quantity(8)));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of(plan.expedition));
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of(plan.expedition));
 
         assertNo(result, "STOCK");
     }
@@ -239,7 +238,7 @@ class ExpeditionValidatorTest {
     void excessCapacityIsAWarning() {
         TransitPlan plan = crowdedTransit();
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.WARNING, "CAPACITY");
         assertFalse(result.hasCritical());
@@ -251,7 +250,7 @@ class ExpeditionValidatorTest {
         Activity activity = plan.expedition.itinerary().getFirst();
         plan.expedition.addAssignment(new VehicleAssignment(activity.id(), UUID.randomUUID()));
 
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
         assertNo(result, "CAPACITY");
@@ -268,7 +267,7 @@ class ExpeditionValidatorTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(person);
 
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "PERMIT");
     }
@@ -302,7 +301,7 @@ class ExpeditionValidatorTest {
         catalog.add(person);
         catalog.add(deltaPermit);
 
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "PERMIT");
     }
@@ -321,7 +320,7 @@ class ExpeditionValidatorTest {
         catalog.add(person);
         catalog.add(morningOnly);
 
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertIssue(result, IssueSeverity.CRITICAL, "PERMIT");
     }
@@ -337,7 +336,7 @@ class ExpeditionValidatorTest {
         expedition.submitForReview();
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(person);
-        ValidationResult result = VALIDATOR.validate(expedition, catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
 
         assertThrows(ExpeditionNotApprovable.class, () -> expedition.approve(result));
         assertEquals(ExpeditionStatus.IN_REVIEW, expedition.status());
@@ -347,7 +346,7 @@ class ExpeditionValidatorTest {
     void capacityWarningCanBeJustifiedAndApproved() {
         TransitPlan plan = crowdedTransit();
         plan.expedition.submitForReview();
-        ValidationResult result = VALIDATOR.validate(plan.expedition, plan.catalog, List.of());
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
         result.warnings().forEach(warning -> plan.expedition.acceptWarning(
                 new AcceptedWarning(warning, "extra trailer available", UUID.randomUUID())
         ));
