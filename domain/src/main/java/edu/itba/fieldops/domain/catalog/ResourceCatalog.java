@@ -1,17 +1,18 @@
 package edu.itba.fieldops.domain.catalog;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 public final class ResourceCatalog {
-    private final Map<UUID, Person> people = new HashMap<>();
-    private final Map<UUID, Vehicle> vehicles = new HashMap<>();
-    private final Map<UUID, Instrument> instruments = new HashMap<>();
-    private final Map<UUID, Consumable> consumables = new HashMap<>();
-    private final Map<UUID, Permit> permits = new HashMap<>();
+    private final Map<UUID, Person> people = new LinkedHashMap<>();
+    private final Map<UUID, Vehicle> vehicles = new LinkedHashMap<>();
+    private final Map<UUID, Instrument> instruments = new LinkedHashMap<>();
+    private final Map<UUID, Consumable> consumables = new LinkedHashMap<>();
+    private final Map<UUID, Permit> permits = new LinkedHashMap<>();
 
     public void add(Person person) {
         put(people, person.id(), person, "person");
@@ -51,6 +52,18 @@ public final class ResourceCatalog {
 
     public Optional<Permit> permit(UUID id) {
         return find(permits, id);
+    }
+
+    public List<Person> people() {
+        return List.copyOf(people.values());
+    }
+
+    public List<Vehicle> vehicles() {
+        return List.copyOf(vehicles.values());
+    }
+
+    public List<Instrument> instruments() {
+        return List.copyOf(instruments.values());
     }
 
     private static <T> void put(Map<UUID, T> items, UUID id, T value, String type) {

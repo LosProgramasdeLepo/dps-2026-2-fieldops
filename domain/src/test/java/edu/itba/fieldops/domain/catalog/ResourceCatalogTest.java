@@ -39,6 +39,9 @@ class ResourceCatalogTest {
         assertEquals(vials, catalog.consumable(vials.id()).orElseThrow());
         assertEquals(permit, catalog.permit(permit.id()).orElseThrow());
         assertTrue(catalog.person(UUID.randomUUID()).isEmpty());
+        assertEquals(List.of(person), catalog.people());
+        assertEquals(List.of(vehicle), catalog.vehicles());
+        assertEquals(List.of(instrument), catalog.instruments());
     }
 
     @Test
