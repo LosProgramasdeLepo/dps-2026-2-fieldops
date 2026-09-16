@@ -133,6 +133,23 @@ class ExpeditionValidatorTest {
     }
 
     @Test
+    void samplingWithoutPersonIsResourceNotCertification() {
+        Certification certification = new Certification(UUID.randomUUID(), "Sampling");
+        Activity activity = sampling(certification.id(), 0, 4);
+        Permit permit = permitFor(activity);
+        Expedition expedition = draft();
+        expedition.addActivity(activity);
+        expedition.addPermit(permit.id());
+        ResourceCatalog catalog = new ResourceCatalog();
+        catalog.add(permit);
+
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
+
+        assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
+        assertNo(result, "CERTIFICATION");
+    }
+
+    @Test
     void transitWithoutVehicleIsCritical() {
         Expedition expedition = draft();
         Activity activity = transit(4, 6);

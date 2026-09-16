@@ -63,7 +63,7 @@ public final class Replanner {
                 continue;
             }
             TemporalBooking slot = booking.get();
-            boolean invalid = !available(catalog, slot)
+            boolean invalid = !slot.availableIn(catalog).orElse(false)
                     || occupying.stream().anyMatch(slot::conflicts)
                     || kept.stream().anyMatch(slot::conflicts);
             if (invalid) {
@@ -75,19 +75,5 @@ public final class Replanner {
         for (Assignment assignment : drop) {
             expedition.removeAssignment(assignment);
         }
-    }
-
-    private static boolean available(ResourceCatalog catalog, TemporalBooking booking) {
-        return switch (booking.kind()) {
-            case PERSON -> catalog.person(booking.resourceId())
-                    .map(person -> person.availableDuring(booking.window()))
-                    .orElse(false);
-            case VEHICLE -> catalog.vehicle(booking.resourceId())
-                    .map(vehicle -> vehicle.availableDuring(booking.window()))
-                    .orElse(false);
-            case INSTRUMENT -> catalog.instrument(booking.resourceId())
-                    .map(instrument -> instrument.availableDuring(booking.window()))
-                    .orElse(false);
-        };
     }
 }

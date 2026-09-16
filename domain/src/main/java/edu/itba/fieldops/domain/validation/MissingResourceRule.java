@@ -41,12 +41,15 @@ public final class MissingResourceRule {
     }
 
     private static Stream<ValidationIssue> missingRequired(Expedition expedition, Activity activity) {
-        return Stream.concat(
+        return Stream.of(
                 issueIf(activity.requirements().needsVehicle() && noneAssigned(expedition, activity.id(), VehicleAssignment.class),
                         "activity " + activity.name() + " requires a vehicle and has none assigned"),
                 issueIf(activity.requirements().needsInstrument() && noneAssigned(expedition, activity.id(), InstrumentAssignment.class),
-                        "activity " + activity.name() + " requires an instrument and has none assigned")
-        );
+                        "activity " + activity.name() + " requires an instrument and has none assigned"),
+                issueIf(!activity.requirements().certifications().isEmpty()
+                                && noneAssigned(expedition, activity.id(), PersonAssignment.class),
+                        "activity " + activity.name() + " requires certified personnel and has none assigned")
+        ).flatMap(issues -> issues);
     }
 
     private static Stream<ValidationIssue> issueIf(boolean missing, String message) {

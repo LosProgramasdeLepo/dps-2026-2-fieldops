@@ -1,5 +1,6 @@
 package edu.itba.fieldops.domain.expedition;
 
+import edu.itba.fieldops.domain.catalog.ResourceCatalog;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 
 import java.util.List;
@@ -35,6 +36,15 @@ public record TemporalBooking(Kind kind, UUID resourceId, UUID activityId, TimeP
                 .map(assignment -> of(assignment, expedition.activityOf(assignment.activityId()).window()))
                 .flatMap(Optional::stream)
                 .toList();
+    }
+
+    public Optional<Boolean> availableIn(ResourceCatalog catalog) {
+        Objects.requireNonNull(catalog, "catalog");
+        return switch (kind) {
+            case PERSON -> catalog.person(resourceId).map(person -> person.availableDuring(window));
+            case VEHICLE -> catalog.vehicle(resourceId).map(vehicle -> vehicle.availableDuring(window));
+            case INSTRUMENT -> catalog.instrument(resourceId).map(instrument -> instrument.availableDuring(window));
+        };
     }
 
     public boolean conflicts(TemporalBooking other) {

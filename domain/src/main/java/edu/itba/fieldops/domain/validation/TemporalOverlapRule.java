@@ -15,7 +15,7 @@ public final class TemporalOverlapRule {
     public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
         List<TemporalBooking> own = TemporalBooking.of(expedition);
         Stream<ValidationIssue> unavailable = own.stream()
-                .filter(booking -> !available(catalog, booking))
+                .filter(booking -> !booking.availableIn(catalog).orElse(true))
                 .map(booking -> critical(
                         "AVAILABILITY",
                         booking.label() + " is not available during "
@@ -47,20 +47,6 @@ public final class TemporalOverlapRule {
             }
         }
         return issues.stream();
-    }
-
-    private static boolean available(ResourceCatalog catalog, TemporalBooking booking) {
-        return switch (booking.kind()) {
-            case PERSON -> catalog.person(booking.resourceId())
-                    .map(person -> person.availableDuring(booking.window()))
-                    .orElse(true);
-            case VEHICLE -> catalog.vehicle(booking.resourceId())
-                    .map(vehicle -> vehicle.availableDuring(booking.window()))
-                    .orElse(true);
-            case INSTRUMENT -> catalog.instrument(booking.resourceId())
-                    .map(instrument -> instrument.availableDuring(booking.window()))
-                    .orElse(true);
-        };
     }
 
     private static ValidationIssue critical(String code, String message) {

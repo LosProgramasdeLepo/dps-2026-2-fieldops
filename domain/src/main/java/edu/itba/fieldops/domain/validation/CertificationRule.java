@@ -29,9 +29,13 @@ public final class CertificationRule {
             UUID activityId,
             UUID certificationId
     ) {
+        List<Assignment> assigned = expedition.assignmentsOf(activityId);
+        if (assigned.stream().noneMatch(PersonAssignment.class::isInstance)) {
+            return false;
+        }
         boolean unknown = false;
         boolean known = false;
-        for (Assignment assignment : expedition.assignmentsOf(activityId)) {
+        for (Assignment assignment : assigned) {
             if (!(assignment instanceof PersonAssignment person)) {
                 continue;
             }
