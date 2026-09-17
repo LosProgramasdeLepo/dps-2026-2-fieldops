@@ -80,6 +80,15 @@ public final class Activity {
         return new Activity(id, name, policy, window, next, zone);
     }
 
+    Activity withoutPredecessor(UUID predecessorId) {
+        Objects.requireNonNull(predecessorId, "predecessor id");
+        Set<UUID> next = new HashSet<>(predecessors);
+        if (!next.remove(predecessorId)) {
+            throw new IllegalArgumentException("unknown predecessor: " + predecessorId);
+        }
+        return new Activity(id, name, policy, window, next, zone);
+    }
+
     private void requireNoSelfPredecessor() {
         if (predecessors.contains(id)) {
             throw new IllegalArgumentException("activity cannot precede itself");

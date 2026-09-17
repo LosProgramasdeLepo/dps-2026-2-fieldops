@@ -16,6 +16,7 @@ public final class Replanner {
     public static void cancel(Expedition expedition, UUID activityId, ResourceCatalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
+        ensureDraft(expedition);
         expedition.removeActivity(activityId);
         refill(expedition, catalog, others);
     }
@@ -29,6 +30,7 @@ public final class Replanner {
     ) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
+        ensureDraft(expedition);
         expedition.delay(activityId, delay);
         dropInvalid(expedition, catalog, others);
         refill(expedition, catalog, others);
@@ -39,6 +41,13 @@ public final class Replanner {
         Objects.requireNonNull(catalog, "catalog");
         dropInvalid(expedition, catalog, others);
         refill(expedition, catalog, others);
+    }
+
+    private static void ensureDraft(Expedition expedition) {
+        if (expedition.status() == ExpeditionStatus.DRAFT) {
+            return;
+        }
+        expedition.returnToDraft();
     }
 
     private static void refill(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {

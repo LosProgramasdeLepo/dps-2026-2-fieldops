@@ -357,6 +357,56 @@ class ExpeditionConstructionTest {
     }
 
     @Test
+    void removingPredecessorDropsTheDependency() {
+        Expedition expedition = wetlandDraft();
+        Activity first = sampling();
+        Activity second = transit();
+        expedition.addActivity(first);
+        expedition.addActivity(second);
+        expedition.addDependency(second.id(), first.id());
+
+        expedition.removeActivity(first.id());
+
+        assertEquals(List.of(second.id()), activityIds(expedition));
+        assertTrue(expedition.activityOf(second.id()).predecessors().isEmpty());
+    }
+
+    @Test
+    void returnToDraftFromApprovedClearsTheApproval() {
+        Expedition expedition = approvedWithActivity();
+
+        expedition.returnToDraft();
+
+        assertEquals(ExpeditionStatus.DRAFT, expedition.status());
+    }
+
+    @Test
+    void returnToDraftFromInProgressClearsExecutions() {
+        Expedition expedition = approvedWithActivity();
+        Activity activity = expedition.itinerary().getFirst();
+        expedition.start();
+        expedition.startActivity(activity.id(), DAY);
+
+        expedition.returnToDraft();
+
+        assertEquals(ExpeditionStatus.DRAFT, expedition.status());
+        assertTrue(expedition.executions().isEmpty());
+    }
+
+    @Test
+    void cannotReturnToDraftFromFinished() {
+        Expedition expedition = approvedWithActivity();
+        Activity activity = expedition.itinerary().getFirst();
+        expedition.start();
+        expedition.startActivity(activity.id(), DAY);
+        expedition.finishActivity(activity.id(), DAY.plusSeconds(3600), "samples stored");
+        expedition.finish();
+
+        assertThrows(InvalidExpeditionTransition.class, expedition::returnToDraft);
+        assertEquals(ExpeditionStatus.FINISHED, expedition.status());
+    }
+
+    @Test
     void delayShiftsDependentActivityWindows() {
         Expedition expedition = wetlandDraft();
         Activity first = sampling();

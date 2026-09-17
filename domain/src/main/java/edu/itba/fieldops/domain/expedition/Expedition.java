@@ -172,7 +172,13 @@ public final class Expedition {
     }
 
     public void returnToDraft() {
-        transition(ExpeditionStatus.IN_REVIEW, ExpeditionStatus.DRAFT, "return to draft");
+        if (!status.canReturnToDraft()) {
+            throw new InvalidExpeditionTransition(status, "return to draft");
+        }
+        if (status.isActive()) {
+            executions.clear();
+        }
+        status = ExpeditionStatus.DRAFT;
         acceptedWarnings.clear();
     }
 

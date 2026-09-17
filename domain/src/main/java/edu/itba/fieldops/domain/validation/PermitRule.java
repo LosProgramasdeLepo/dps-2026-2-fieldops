@@ -24,15 +24,18 @@ public final class PermitRule {
                 .toList();
         Stream<ValidationIssue> unknown = attached.stream()
                 .filter(attachedPermit -> attachedPermit.permit().isEmpty())
-                .map(attachedPermit -> critical("unknown permit " + attachedPermit.id()));
-        Stream<ValidationIssue> uncovered = expedition.itinerary().stream()
-                .filter(activity -> known.stream().noneMatch(permit -> permit.covers(activity.zone(), activity.window())))
-                .map(PermitRule::uncovered);
+                .map(attachedPermit -> issue("RESOURCE", "unknown permit " + attachedPermit.id()));
+        Stream<ValidationIssue> uncovered = known.isEmpty() && !attached.isEmpty()
+                ? Stream.empty()
+                : expedition.itinerary().stream()
+                        .filter(activity -> known.stream().noneMatch(permit -> permit.covers(activity.zone(), activity.window())))
+                        .map(PermitRule::uncovered);
         return Stream.concat(unknown, uncovered).toList();
     }
 
     private static ValidationIssue uncovered(Activity activity) {
-        return critical(
+        return issue(
+                "PERMIT",
                 "activity " + activity.name()
                         + " in zone " + activity.zone().name()
                         + " during " + activity.window().start()
@@ -41,8 +44,8 @@ public final class PermitRule {
         );
     }
 
-    private static ValidationIssue critical(String message) {
-        return new ValidationIssue(IssueSeverity.CRITICAL, "PERMIT", message);
+    private static ValidationIssue issue(String code, String message) {
+        return new ValidationIssue(IssueSeverity.CRITICAL, code, message);
     }
 
     private record AttachedPermit(UUID id, Optional<Permit> permit) {

@@ -262,6 +262,37 @@ class ExpeditionValidatorTest {
     }
 
     @Test
+    void combinedVehicleCapacityCanCarryThePeople() {
+        TransitPlan plan = crowdedTransit();
+        Activity activity = plan.expedition.itinerary().getFirst();
+        Vehicle extra = new Vehicle(UUID.randomUUID(), new Quantity(1), Availability.always());
+        plan.catalog.add(extra);
+        plan.expedition.addAssignment(new VehicleAssignment(activity.id(), extra.id()));
+
+        ValidationResult result = ExpeditionValidator.validate(plan.expedition, plan.catalog, List.of());
+
+        assertNo(result, "CAPACITY");
+    }
+
+    @Test
+    void unknownPermitIsResourceNotCoverage() {
+        Certification certification = new Certification(UUID.randomUUID(), "Sampling");
+        Person person = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
+        Activity activity = sampling(certification.id(), 0, 4);
+        Expedition expedition = draft();
+        expedition.addActivity(activity);
+        expedition.addAssignment(new PersonAssignment(activity.id(), person.id()));
+        expedition.addPermit(UUID.randomUUID());
+        ResourceCatalog catalog = new ResourceCatalog();
+        catalog.add(person);
+
+        ValidationResult result = ExpeditionValidator.validate(expedition, catalog, List.of());
+
+        assertIssue(result, IssueSeverity.CRITICAL, "RESOURCE");
+        assertNo(result, "PERMIT");
+    }
+
+    @Test
     void unknownVehicleDoesNotEmitCapacity() {
         TransitPlan plan = crowdedTransit();
         Activity activity = plan.expedition.itinerary().getFirst();

@@ -24,10 +24,14 @@ public final class Itinerary {
     }
 
     public void remove(UUID activityId) {
-        requireUnusedPredecessor(activityId);
-        if (!activities.removeIf(activity -> activity.id().equals(activityId))) {
-            throw new IllegalArgumentException("unknown activity: " + activityId);
+        activityOf(activityId);
+        for (int index = 0; index < activities.size(); index++) {
+            Activity activity = activities.get(index);
+            if (activity.predecessors().contains(activityId)) {
+                activities.set(index, activity.withoutPredecessor(activityId));
+            }
         }
+        activities.removeIf(activity -> activity.id().equals(activityId));
     }
 
     public void reorder(List<UUID> orderedIds) {
@@ -96,13 +100,6 @@ public final class Itinerary {
 
     private void requireKnownPredecessors(Activity activity) {
         activity.predecessors().forEach(this::activityOf);
-    }
-
-    private void requireUnusedPredecessor(UUID activityId) {
-        boolean used = activities.stream().anyMatch(activity -> activity.predecessors().contains(activityId));
-        if (used) {
-            throw new IllegalArgumentException("activity is a predecessor of another");
-        }
     }
 
     private void requireAcyclic(Activity activity) {
