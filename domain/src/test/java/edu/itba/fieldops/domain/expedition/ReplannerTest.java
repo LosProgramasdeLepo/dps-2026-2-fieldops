@@ -10,15 +10,18 @@ import edu.itba.fieldops.domain.itinerary.TransitPolicy;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
 import edu.itba.fieldops.domain.assessment.ValidationResult;
+import edu.itba.fieldops.domain.tracking.Incident;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,27 +69,80 @@ class ReplannerTest {
     }
 
     @Test
-    void cancelFromApprovedReturnsToDraft() {
+    void cancelFromApprovedLeavesTheApprovedPlanAndReturnsARevision() {
         Certification certification = new Certification(UUID.randomUUID(), "Sampling");
         Person ada = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
         Activity sample = sampling(certification.id(), 0, 4);
         Activity ride = transit(4, 6);
-        Expedition expedition = draftWith(sample);
-        expedition.addActivity(ride);
-        expedition.submitForReview();
-        expedition.approve(ValidationResult.empty());
+        Expedition approved = draftWith(sample);
+        approved.addActivity(ride);
+        approved.submitForReview();
+        approved.approve(ValidationResult.empty());
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        replanner.cancel(expedition, ride.id(), catalog, List.of());
+        Expedition revision = replanner.cancel(approved, ride.id(), catalog, List.of());
 
-        assertEquals(ExpeditionStatus.DRAFT, expedition.status());
-        assertEquals(List.of(sample.id()), expedition.itinerary().stream().map(Activity::id).toList());
-        assertEquals(List.of(new PersonAssignment(sample.id(), ada.id())), expedition.assignments());
+        assertNotEquals(approved.id(), revision.id());
+        assertEquals(ExpeditionStatus.APPROVED, approved.status());
+        assertEquals(
+                List.of(sample.id(), ride.id()),
+                approved.itinerary().stream().map(Activity::id).toList()
+        );
+
+        assertEquals(ExpeditionStatus.DRAFT, revision.status());
+        assertEquals(2, revision.version());
+        assertEquals(Optional.of(approved.id()), revision.supersedes());
+        assertEquals(List.of(sample.id()), revision.itinerary().stream().map(Activity::id).toList());
+        assertEquals(List.of(new PersonAssignment(sample.id(), ada.id())), revision.assignments());
     }
 
     @Test
-    void delayFromInProgressReturnsToDraftAndClearsExecutions() {
+    void revisingAnApprovedPlanKeepsItsExecutionsAndIncidentsOnTheOriginal() {
+        Certification certification = new Certification(UUID.randomUUID(), "Sampling");
+        Person ada = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
+        Activity sample = sampling(certification.id(), 0, 4);
+        Activity ride = transit(4, 6);
+        Expedition approved = draftWith(sample);
+        approved.addActivity(ride);
+        approved.addAssignment(new PersonAssignment(sample.id(), ada.id()));
+        approved.submitForReview();
+        approved.approve(ValidationResult.empty());
+        approved.start();
+        approved.startActivity(sample.id(), DAY);
+        approved.addIncident(new Incident("ventisca en el frente", DAY, sample.id()));
+        ResourceCatalog catalog = new ResourceCatalog();
+        catalog.add(ada);
+
+        Expedition revision = replanner.cancel(approved, ride.id(), catalog, List.of());
+
+        assertEquals(1, approved.executions().size());
+        assertEquals(1, approved.incidents().size());
+        assertEquals(ExpeditionStatus.IN_PROGRESS, approved.status());
+        assertTrue(revision.executions().isEmpty());
+        assertTrue(revision.incidents().isEmpty());
+    }
+
+    @Test
+    void aRevisionDoesNotCompeteForResourcesWithThePlanItReplaces() {
+        Certification certification = new Certification(UUID.randomUUID(), "Sampling");
+        Person ada = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
+        Activity sample = sampling(certification.id(), 0, 4);
+        Activity ride = transit(4, 6);
+        Expedition approved = draftWith(sample);
+        approved.addActivity(ride);
+        approved.submitForReview();
+        approved.approve(ValidationResult.empty());
+        ResourceCatalog catalog = new ResourceCatalog();
+        catalog.add(ada);
+
+        Expedition revision = replanner.cancel(approved, ride.id(), catalog, List.of(approved));
+
+        assertEquals(List.of(new PersonAssignment(sample.id(), ada.id())), revision.assignments());
+    }
+
+    @Test
+    void delayFromInProgressShiftsTheRevisionAndLeavesTheRunUntouched() {
         Certification certification = new Certification(UUID.randomUUID(), "Sampling");
         Person ada = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
         Activity sample = sampling(certification.id(), 0, 4);
@@ -99,11 +155,15 @@ class ReplannerTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        replanner.delay(expedition, sample.id(), Duration.ofHours(2), catalog, List.of());
+        Expedition revision = replanner.delay(expedition, sample.id(), Duration.ofHours(2), catalog, List.of());
 
-        assertEquals(ExpeditionStatus.DRAFT, expedition.status());
-        assertEquals(window(2, 6), expedition.activityOf(sample.id()).window());
-        assertTrue(expedition.executions().isEmpty());
+        assertEquals(ExpeditionStatus.IN_PROGRESS, expedition.status());
+        assertEquals(window(0, 4), expedition.activityOf(sample.id()).window());
+        assertEquals(1, expedition.executions().size());
+
+        assertEquals(ExpeditionStatus.DRAFT, revision.status());
+        assertEquals(window(2, 6), revision.activityOf(sample.id()).window());
+        assertTrue(revision.executions().isEmpty());
     }
 
     @Test

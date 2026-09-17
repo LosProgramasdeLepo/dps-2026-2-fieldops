@@ -16,15 +16,16 @@ public final class Replanner {
         this.suggester = Objects.requireNonNull(suggester, "assignment suggester");
     }
 
-    public void cancel(Expedition expedition, UUID activityId, Catalog catalog, List<Expedition> others) {
+    public Expedition cancel(Expedition expedition, UUID activityId, Catalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
-        ensureDraft(expedition);
-        expedition.removeActivity(activityId);
-        refill(expedition, catalog, others);
+        Expedition plan = editablePlanFor(expedition);
+        plan.removeActivity(activityId);
+        refill(plan, catalog, others);
+        return plan;
     }
 
-    public void delay(
+    public Expedition delay(
             Expedition expedition,
             UUID activityId,
             Duration delay,
@@ -33,24 +34,32 @@ public final class Replanner {
     ) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
-        ensureDraft(expedition);
-        expedition.delay(activityId, delay);
-        dropInvalid(expedition, catalog, others);
-        refill(expedition, catalog, others);
+        Expedition plan = editablePlanFor(expedition);
+        plan.delay(activityId, delay);
+        dropInvalid(plan, catalog, others);
+        refill(plan, catalog, others);
+        return plan;
     }
 
-    public void replaceUnavailable(Expedition expedition, Catalog catalog, List<Expedition> others) {
+    public Expedition replaceUnavailable(Expedition expedition, Catalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
-        dropInvalid(expedition, catalog, others);
-        refill(expedition, catalog, others);
+        Expedition plan = revisionOrSelf(expedition);
+        dropInvalid(plan, catalog, others);
+        refill(plan, catalog, others);
+        return plan;
     }
 
-    private static void ensureDraft(Expedition expedition) {
-        if (expedition.status() == ExpeditionStatus.DRAFT) {
-            return;
+    private static Expedition editablePlanFor(Expedition expedition) {
+        Expedition plan = revisionOrSelf(expedition);
+        if (plan.status() != ExpeditionStatus.DRAFT) {
+            plan.returnToDraft();
         }
-        expedition.returnToDraft();
+        return plan;
+    }
+
+    private static Expedition revisionOrSelf(Expedition expedition) {
+        return expedition.status().hasBeenApproved() ? expedition.reviseAsDraft() : expedition;
     }
 
     private void refill(Expedition expedition, Catalog catalog, List<Expedition> others) {

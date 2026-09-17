@@ -92,6 +92,12 @@ public final class Itinerary {
         return List.copyOf(activities);
     }
 
+    public Itinerary copy() {
+        Itinerary copy = new Itinerary();
+        copy.activities.addAll(activities);
+        return copy;
+    }
+
     private void requireUnknown(UUID activityId) {
         if (activities.stream().anyMatch(activity -> activity.id().equals(activityId))) {
             throw new IllegalArgumentException("duplicate activity: " + activityId);

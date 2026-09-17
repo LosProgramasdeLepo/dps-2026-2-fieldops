@@ -24,6 +24,10 @@ public enum ExpeditionStatus {
         return this == IN_REVIEW || this == APPROVED || this == IN_PROGRESS || this == SUSPENDED;
     }
 
+    public boolean hasBeenApproved() {
+        return this == APPROVED || this == IN_PROGRESS || this == SUSPENDED || this == FINISHED;
+    }
+
     public boolean canReturnToDraft() {
         return this == IN_REVIEW || this == APPROVED || this == IN_PROGRESS || this == SUSPENDED;
     }

@@ -20,6 +20,8 @@ import java.util.UUID;
 
 public final class Expedition {
     private final UUID id;
+    private final int version;
+    private final UUID supersedes;
     private final List<Objective> objectives;
     private final TimePeriod period;
     private final List<WorkZone> zones;
@@ -54,6 +56,8 @@ public final class Expedition {
             List<Restriction> restrictions
     ) {
         this.id = Objects.requireNonNull(id, "expedition id");
+        this.version = 1;
+        this.supersedes = null;
         this.objectives = copyRequired(objectives, "objectives");
         this.period = Objects.requireNonNull(period, "period");
         this.zones = copyRequired(zones, "zones");
@@ -67,6 +71,29 @@ public final class Expedition {
         this.observations = new ArrayList<>();
         this.executions = new ArrayList<>();
         this.status = ExpeditionStatus.DRAFT;
+    }
+
+    private Expedition(Expedition source) {
+        this.id = UUID.randomUUID();
+        this.version = source.version + 1;
+        this.supersedes = source.id;
+        this.objectives = source.objectives;
+        this.period = source.period;
+        this.zones = source.zones;
+        this.responsibles = source.responsibles;
+        this.restrictions = source.restrictions;
+        this.itinerary = source.itinerary.copy();
+        this.assignments = new ArrayList<>(source.assignments);
+        this.permits = new ArrayList<>(source.permits);
+        this.acceptedWarnings = new ArrayList<>();
+        this.incidents = new ArrayList<>();
+        this.observations = new ArrayList<>();
+        this.executions = new ArrayList<>();
+        this.status = ExpeditionStatus.DRAFT;
+    }
+
+    public Expedition reviseAsDraft() {
+        return new Expedition(this);
     }
 
     public void addActivity(Activity activity) {
@@ -213,6 +240,14 @@ public final class Expedition {
         return id;
     }
 
+    public int version() {
+        return version;
+    }
+
+    public Optional<UUID> supersedes() {
+        return Optional.ofNullable(supersedes);
+    }
+
     public List<Objective> objectives() {
         return objectives;
     }
@@ -280,6 +315,8 @@ public final class Expedition {
         Objects.requireNonNull(others, "other expeditions");
         return List.copyOf(others).stream()
                 .filter(peer -> !peer.id().equals(id))
+                // a revision replaces the version it supersedes, so it does not compete with it for resources
+                .filter(peer -> !peer.id().equals(supersedes))
                 .filter(peer -> peer.status().occupiesResources())
                 .toList();
     }
