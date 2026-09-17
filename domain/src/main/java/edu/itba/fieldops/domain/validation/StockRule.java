@@ -1,7 +1,9 @@
 package edu.itba.fieldops.domain.validation;
 
+import edu.itba.fieldops.domain.assessment.IssueSeverity;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
 import edu.itba.fieldops.domain.catalog.Consumable;
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.expedition.Assignment;
 import edu.itba.fieldops.domain.expedition.Expedition;
 import edu.itba.fieldops.domain.shared.Quantity;
@@ -14,12 +16,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-final class StockRule {
-    private StockRule() {
-    }
-
-    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
-        Map<UUID, Quantity> needed = Stream.concat(Stream.of(expedition), occupying.stream())
+public final class StockRule implements ValidationRule {
+    @Override
+    public List<ValidationIssue> check(ValidationContext context) {
+        Catalog catalog = context.catalog();
+        Map<UUID, Quantity> needed = Stream.concat(Stream.of(context.expedition()), context.occupying().stream())
                 .map(Expedition::assignments)
                 .flatMap(List::stream)
                 .map(Assignment::consumption)

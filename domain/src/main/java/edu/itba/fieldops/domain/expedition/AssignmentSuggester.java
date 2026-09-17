@@ -1,7 +1,7 @@
 package edu.itba.fieldops.domain.expedition;
 
 import edu.itba.fieldops.domain.catalog.Person;
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.itinerary.Activity;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 
@@ -11,11 +11,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public final class AssignmentSuggester {
-    private AssignmentSuggester() {
-    }
-
-    public static List<Assignment> suggest(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
+public class AssignmentSuggester {
+    public List<Assignment> suggest(Expedition expedition, Catalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
         List<TemporalBooking> taken = new ArrayList<>(TemporalBooking.of(expedition));
@@ -32,7 +29,7 @@ public final class AssignmentSuggester {
     private static void fillGaps(
             Activity activity,
             Expedition expedition,
-            ResourceCatalog catalog,
+            Catalog catalog,
             List<TemporalBooking> taken,
             List<Assignment> suggestions
     ) {
@@ -78,7 +75,7 @@ public final class AssignmentSuggester {
         TemporalBooking.of(assignment, window).ifPresent(taken::add);
     }
 
-    private static boolean heldBy(List<Assignment> current, ResourceCatalog catalog, UUID certificationId) {
+    private static boolean heldBy(List<Assignment> current, Catalog catalog, UUID certificationId) {
         return current.stream()
                 .flatMap(assignment -> assignment instanceof PersonAssignment person
                         ? catalog.person(person.personId()).stream()

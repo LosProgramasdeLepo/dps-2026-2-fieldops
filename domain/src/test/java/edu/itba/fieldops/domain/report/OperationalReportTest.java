@@ -11,7 +11,7 @@ import edu.itba.fieldops.domain.shared.Quantity;
 import edu.itba.fieldops.domain.shared.RiskLevel;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
-import edu.itba.fieldops.domain.validation.ValidationResult;
+import edu.itba.fieldops.domain.assessment.ValidationResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

@@ -1,6 +1,6 @@
 package edu.itba.fieldops.domain.expedition;
 
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,10 +10,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class Replanner {
-    private Replanner() {
+    private final AssignmentSuggester suggester;
+
+    public Replanner(AssignmentSuggester suggester) {
+        this.suggester = Objects.requireNonNull(suggester, "assignment suggester");
     }
 
-    public static void cancel(Expedition expedition, UUID activityId, ResourceCatalog catalog, List<Expedition> others) {
+    public void cancel(Expedition expedition, UUID activityId, Catalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
         ensureDraft(expedition);
@@ -21,11 +24,11 @@ public final class Replanner {
         refill(expedition, catalog, others);
     }
 
-    public static void delay(
+    public void delay(
             Expedition expedition,
             UUID activityId,
             Duration delay,
-            ResourceCatalog catalog,
+            Catalog catalog,
             List<Expedition> others
     ) {
         Objects.requireNonNull(expedition, "expedition");
@@ -36,7 +39,7 @@ public final class Replanner {
         refill(expedition, catalog, others);
     }
 
-    public static void replaceUnavailable(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
+    public void replaceUnavailable(Expedition expedition, Catalog catalog, List<Expedition> others) {
         Objects.requireNonNull(expedition, "expedition");
         Objects.requireNonNull(catalog, "catalog");
         dropInvalid(expedition, catalog, others);
@@ -50,13 +53,13 @@ public final class Replanner {
         expedition.returnToDraft();
     }
 
-    private static void refill(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
-        for (Assignment assignment : AssignmentSuggester.suggest(expedition, catalog, others)) {
+    private void refill(Expedition expedition, Catalog catalog, List<Expedition> others) {
+        for (Assignment assignment : suggester.suggest(expedition, catalog, others)) {
             expedition.addAssignment(assignment);
         }
     }
 
-    private static void dropInvalid(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
+    private static void dropInvalid(Expedition expedition, Catalog catalog, List<Expedition> others) {
         List<TemporalBooking> occupying = new ArrayList<>();
         for (Expedition peer : expedition.occupyingPeers(others)) {
             occupying.addAll(TemporalBooking.of(peer));

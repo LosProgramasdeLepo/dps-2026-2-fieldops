@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class ResourceCatalog {
+public final class ResourceCatalog implements Catalog {
     private final Map<UUID, Person> people = new LinkedHashMap<>();
     private final Map<UUID, Vehicle> vehicles = new LinkedHashMap<>();
     private final Map<UUID, Instrument> instruments = new LinkedHashMap<>();
@@ -34,34 +34,42 @@ public final class ResourceCatalog {
         put(permits, permit.id(), permit, "permit");
     }
 
+    @Override
     public Optional<Person> person(UUID id) {
         return find(people, id);
     }
 
+    @Override
     public Optional<Vehicle> vehicle(UUID id) {
         return find(vehicles, id);
     }
 
+    @Override
     public Optional<Instrument> instrument(UUID id) {
         return find(instruments, id);
     }
 
+    @Override
     public Optional<Consumable> consumable(UUID id) {
         return find(consumables, id);
     }
 
+    @Override
     public Optional<Permit> permit(UUID id) {
         return find(permits, id);
     }
 
+    @Override
     public List<Person> people() {
         return List.copyOf(people.values());
     }
 
+    @Override
     public List<Vehicle> vehicles() {
         return List.copyOf(vehicles.values());
     }
 
+    @Override
     public List<Instrument> instruments() {
         return List.copyOf(instruments.values());
     }

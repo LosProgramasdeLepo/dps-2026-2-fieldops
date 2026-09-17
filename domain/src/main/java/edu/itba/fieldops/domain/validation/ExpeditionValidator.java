@@ -1,27 +1,39 @@
 package edu.itba.fieldops.domain.validation;
 
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.assessment.ValidationResult;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.expedition.Expedition;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 public final class ExpeditionValidator {
-    private ExpeditionValidator() {
+    private final List<ValidationRule> rules;
+
+    public ExpeditionValidator(List<ValidationRule> rules) {
+        this.rules = List.copyOf(Objects.requireNonNull(rules, "rules"));
     }
 
-    public static ValidationResult validate(Expedition expedition, ResourceCatalog catalog, List<Expedition> others) {
-        Objects.requireNonNull(expedition, "expedition");
-        Objects.requireNonNull(catalog, "catalog");
-        List<Expedition> occupying = expedition.occupyingPeers(others);
-        return new ValidationResult(Stream.of(
-                MissingResourceRule.check(expedition, catalog),
-                TemporalOverlapRule.check(expedition, catalog, occupying),
-                StockRule.check(expedition, catalog, occupying),
-                CertificationRule.check(expedition, catalog),
-                CapacityRule.check(expedition, catalog),
-                PermitRule.check(expedition, catalog)
-        ).flatMap(List::stream).toList());
+    public static ExpeditionValidator withDefaultRules() {
+        return new ExpeditionValidator(List.of(
+                new MissingResourceRule(),
+                new TemporalOverlapRule(),
+                new StockRule(),
+                new CertificationRule(),
+                new CapacityRule(),
+                new PermitRule()
+        ));
+    }
+
+    public ValidationResult validate(Expedition expedition, Catalog catalog, List<Expedition> others) {
+        return validate(ValidationContext.of(expedition, catalog, others));
+    }
+
+    public ValidationResult validate(ValidationContext context) {
+        Objects.requireNonNull(context, "context");
+        return new ValidationResult(rules.stream()
+                .map(rule -> rule.check(context))
+                .flatMap(List::stream)
+                .toList());
     }
 }

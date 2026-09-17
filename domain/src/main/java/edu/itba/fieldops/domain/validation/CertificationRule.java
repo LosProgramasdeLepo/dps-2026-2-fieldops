@@ -1,7 +1,9 @@
 package edu.itba.fieldops.domain.validation;
 
+import edu.itba.fieldops.domain.assessment.IssueSeverity;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
 import edu.itba.fieldops.domain.catalog.Person;
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.expedition.Expedition;
 import edu.itba.fieldops.domain.expedition.PersonAssignment;
 import edu.itba.fieldops.domain.itinerary.Activity;
@@ -10,11 +12,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-final class CertificationRule {
-    private CertificationRule() {
-    }
-
-    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+public final class CertificationRule implements ValidationRule {
+    @Override
+    public List<ValidationIssue> check(ValidationContext context) {
+        Expedition expedition = context.expedition();
+        Catalog catalog = context.catalog();
         return expedition.itinerary().stream()
                 .flatMap(activity -> activity.requirements().certifications().stream()
                         .filter(certificationId -> uncertified(expedition, catalog, activity.id(), certificationId))
@@ -24,7 +26,7 @@ final class CertificationRule {
 
     private static boolean uncertified(
             Expedition expedition,
-            ResourceCatalog catalog,
+            Catalog catalog,
             UUID activityId,
             UUID certificationId
     ) {

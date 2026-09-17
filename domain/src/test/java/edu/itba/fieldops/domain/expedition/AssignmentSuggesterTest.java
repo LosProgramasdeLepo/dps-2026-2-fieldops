@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AssignmentSuggesterTest {
+    private final AssignmentSuggester suggester = new AssignmentSuggester();
+
     private static final Instant DAY = Instant.parse("2026-11-01T08:00:00Z");
     private static final WorkZone DELTA = new WorkZone("Delta");
 
@@ -36,7 +38,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of());
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of());
 
         assertEquals(List.of(new PersonAssignment(activity.id(), ada.id())), suggestions);
     }
@@ -51,7 +53,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of());
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of());
 
         assertTrue(suggestions.isEmpty());
     }
@@ -71,7 +73,7 @@ class AssignmentSuggesterTest {
         catalog.add(ada);
         catalog.add(bob);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of(occupying));
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of(occupying));
 
         assertEquals(List.of(new PersonAssignment(secondActivity.id(), bob.id())), suggestions);
     }
@@ -89,7 +91,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of(occupying));
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of(occupying));
 
         assertEquals(List.of(new PersonAssignment(afternoon.id(), ada.id())), suggestions);
     }
@@ -102,7 +104,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(vehicle);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of());
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of());
 
         assertEquals(List.of(new VehicleAssignment(activity.id(), vehicle.id())), suggestions);
     }
@@ -118,7 +120,7 @@ class AssignmentSuggesterTest {
         catalog.add(ada);
         catalog.add(meter);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of());
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of());
 
         assertEquals(
                 List.of(
@@ -139,7 +141,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        List<Assignment> suggestions = AssignmentSuggester.suggest(expedition, catalog, List.of());
+        List<Assignment> suggestions = suggester.suggest(expedition, catalog, List.of());
 
         assertTrue(suggestions.isEmpty());
     }
@@ -153,7 +155,7 @@ class AssignmentSuggesterTest {
         ResourceCatalog catalog = new ResourceCatalog();
         catalog.add(ada);
 
-        AssignmentSuggester.suggest(expedition, catalog, List.of()).forEach(expedition::addAssignment);
+        suggester.suggest(expedition, catalog, List.of()).forEach(expedition::addAssignment);
 
         assertEquals(List.of(new PersonAssignment(activity.id(), ada.id())), expedition.assignments());
     }

@@ -7,8 +7,8 @@ import edu.itba.fieldops.domain.shared.WorkZone;
 import edu.itba.fieldops.domain.tracking.ActivityExecution;
 import edu.itba.fieldops.domain.tracking.Incident;
 import edu.itba.fieldops.domain.tracking.Observation;
-import edu.itba.fieldops.domain.validation.ValidationIssue;
-import edu.itba.fieldops.domain.validation.ValidationResult;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
+import edu.itba.fieldops.domain.assessment.ValidationResult;
 
 import java.time.Duration;
 import java.time.Instant;

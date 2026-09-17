@@ -1,6 +1,6 @@
 package edu.itba.fieldops.domain.expedition;
 
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 
 import java.util.List;
@@ -38,15 +38,15 @@ public record TemporalBooking(Kind kind, UUID resourceId, UUID activityId, TimeP
                 .toList();
     }
 
-    public boolean availableIn(ResourceCatalog catalog) {
+    public boolean availableIn(Catalog catalog) {
         return presence(catalog) == Presence.AVAILABLE;
     }
 
-    public boolean unavailableIn(ResourceCatalog catalog) {
+    public boolean unavailableIn(Catalog catalog) {
         return presence(catalog) == Presence.UNAVAILABLE;
     }
 
-    private Presence presence(ResourceCatalog catalog) {
+    private Presence presence(Catalog catalog) {
         Objects.requireNonNull(catalog, "catalog");
         return switch (kind) {
             case PERSON -> catalog.person(resourceId)

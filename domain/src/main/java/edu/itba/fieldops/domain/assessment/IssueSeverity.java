@@ -1,4 +1,4 @@
-package edu.itba.fieldops.domain.validation;
+package edu.itba.fieldops.domain.assessment;
 
 public enum IssueSeverity {
     CRITICAL,

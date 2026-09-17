@@ -1,6 +1,8 @@
 package edu.itba.fieldops.domain.validation;
 
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.assessment.IssueSeverity;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.catalog.Vehicle;
 import edu.itba.fieldops.domain.expedition.Assignment;
 import edu.itba.fieldops.domain.expedition.Expedition;
@@ -13,18 +15,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-final class CapacityRule {
-    private CapacityRule() {
-    }
-
-    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+public final class CapacityRule implements ValidationRule {
+    @Override
+    public List<ValidationIssue> check(ValidationContext context) {
+        Expedition expedition = context.expedition();
+        Catalog catalog = context.catalog();
         return expedition.itinerary().stream()
                 .map(activity -> issueFor(expedition, catalog, activity))
                 .flatMap(Optional::stream)
                 .toList();
     }
 
-    private static Optional<ValidationIssue> issueFor(Expedition expedition, ResourceCatalog catalog, Activity activity) {
+    private static Optional<ValidationIssue> issueFor(Expedition expedition, Catalog catalog, Activity activity) {
         List<Assignment> assigned = expedition.assignmentsOf(activity.id());
         boolean unknownVehicle = assigned.stream()
                 .anyMatch(assignment -> assignment instanceof VehicleAssignment vehicle

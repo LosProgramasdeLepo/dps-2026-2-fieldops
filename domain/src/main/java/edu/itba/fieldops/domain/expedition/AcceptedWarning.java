@@ -1,7 +1,7 @@
 package edu.itba.fieldops.domain.expedition;
 
 import edu.itba.fieldops.domain.shared.Texts;
-import edu.itba.fieldops.domain.validation.ValidationIssue;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
 
 import java.util.Objects;
 import java.util.UUID;

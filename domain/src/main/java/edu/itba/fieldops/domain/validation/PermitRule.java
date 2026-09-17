@@ -1,7 +1,9 @@
 package edu.itba.fieldops.domain.validation;
 
+import edu.itba.fieldops.domain.assessment.IssueSeverity;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
 import edu.itba.fieldops.domain.catalog.Permit;
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.expedition.Expedition;
 import edu.itba.fieldops.domain.itinerary.Activity;
 
@@ -10,11 +12,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-final class PermitRule {
-    private PermitRule() {
-    }
-
-    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+public final class PermitRule implements ValidationRule {
+    @Override
+    public List<ValidationIssue> check(ValidationContext context) {
+        Expedition expedition = context.expedition();
+        Catalog catalog = context.catalog();
         List<AttachedPermit> attached = expedition.permits().stream()
                 .map(permitId -> new AttachedPermit(permitId, catalog.permit(permitId)))
                 .toList();

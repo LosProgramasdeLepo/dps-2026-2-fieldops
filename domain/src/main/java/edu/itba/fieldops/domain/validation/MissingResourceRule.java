@@ -1,6 +1,8 @@
 package edu.itba.fieldops.domain.validation;
 
-import edu.itba.fieldops.domain.catalog.ResourceCatalog;
+import edu.itba.fieldops.domain.assessment.IssueSeverity;
+import edu.itba.fieldops.domain.assessment.ValidationIssue;
+import edu.itba.fieldops.domain.catalog.Catalog;
 import edu.itba.fieldops.domain.expedition.Assignment;
 import edu.itba.fieldops.domain.expedition.ConsumableAssignment;
 import edu.itba.fieldops.domain.expedition.Expedition;
@@ -14,11 +16,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-final class MissingResourceRule {
-    private MissingResourceRule() {
-    }
-
-    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+public final class MissingResourceRule implements ValidationRule {
+    @Override
+    public List<ValidationIssue> check(ValidationContext context) {
+        Expedition expedition = context.expedition();
+        Catalog catalog = context.catalog();
         Stream<ValidationIssue> unknown = expedition.assignments().stream()
                 .map(assignment -> unknown(catalog, assignment))
                 .flatMap(Optional::stream);
@@ -27,7 +29,7 @@ final class MissingResourceRule {
         return Stream.concat(unknown, required).toList();
     }
 
-    private static Optional<ValidationIssue> unknown(ResourceCatalog catalog, Assignment assignment) {
+    private static Optional<ValidationIssue> unknown(Catalog catalog, Assignment assignment) {
         return switch (assignment) {
             case PersonAssignment person -> unknownIfAbsent(catalog.person(person.personId()), "person", person.personId());
             case VehicleAssignment vehicle -> unknownIfAbsent(catalog.vehicle(vehicle.vehicleId()), "vehicle", vehicle.vehicleId());
