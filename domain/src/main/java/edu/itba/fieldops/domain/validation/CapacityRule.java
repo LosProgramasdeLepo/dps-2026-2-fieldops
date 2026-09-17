@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public final class CapacityRule {
+final class CapacityRule {
     private CapacityRule() {
     }
 
-    public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
         return expedition.itinerary().stream()
                 .map(activity -> issueFor(expedition, catalog, activity))
                 .flatMap(Optional::stream)

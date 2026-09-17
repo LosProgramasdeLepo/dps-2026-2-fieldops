@@ -72,7 +72,7 @@ public final class Replanner {
                 continue;
             }
             TemporalBooking slot = booking.get();
-            boolean invalid = !slot.availableIn(catalog).orElse(false)
+            boolean invalid = !slot.availableIn(catalog)
                     || occupying.stream().anyMatch(slot::conflicts)
                     || kept.stream().anyMatch(slot::conflicts);
             if (invalid) {

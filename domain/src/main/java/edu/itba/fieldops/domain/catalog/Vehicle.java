@@ -25,10 +25,6 @@ public final class Vehicle {
         return capacity;
     }
 
-    public boolean canCarry(Quantity passengers) {
-        return capacity.isAtLeast(passengers);
-    }
-
     public boolean availableDuring(TimePeriod period) {
         return availability.covers(period);
     }

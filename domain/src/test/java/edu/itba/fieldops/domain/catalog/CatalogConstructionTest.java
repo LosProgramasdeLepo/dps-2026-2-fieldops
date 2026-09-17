@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CatalogConstructionTest {
@@ -32,7 +33,7 @@ class CatalogConstructionTest {
         Instrument instrument = new Instrument(UUID.randomUUID(), "pH meter", Availability.always());
         Consumable vials = new Consumable(UUID.randomUUID(), "vials", new Quantity(20));
 
-        assertTrue(vehicle.canCarry(new Quantity(4)));
+        assertEquals(new Quantity(4), vehicle.capacity());
         assertTrue(instrument.availableDuring(WEEK));
         assertTrue(vials.hasAtLeast(new Quantity(20)));
     }

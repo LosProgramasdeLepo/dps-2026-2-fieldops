@@ -8,14 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public final class TemporalOverlapRule {
+final class TemporalOverlapRule {
     private TemporalOverlapRule() {
     }
 
-    public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
+    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog, List<Expedition> occupying) {
         List<TemporalBooking> own = TemporalBooking.of(expedition);
         Stream<ValidationIssue> unavailable = own.stream()
-                .filter(booking -> !booking.availableIn(catalog).orElse(true))
+                .filter(booking -> booking.unavailableIn(catalog))
                 .map(booking -> critical(
                         "AVAILABILITY",
                         booking.label() + " is not available during "

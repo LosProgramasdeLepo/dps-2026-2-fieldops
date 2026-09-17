@@ -14,11 +14,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public final class MissingResourceRule {
+final class MissingResourceRule {
     private MissingResourceRule() {
     }
 
-    public static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
+    static List<ValidationIssue> check(Expedition expedition, ResourceCatalog catalog) {
         Stream<ValidationIssue> unknown = expedition.assignments().stream()
                 .map(assignment -> unknown(catalog, assignment))
                 .flatMap(Optional::stream);

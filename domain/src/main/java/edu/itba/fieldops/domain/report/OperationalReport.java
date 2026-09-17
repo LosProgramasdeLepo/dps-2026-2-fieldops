@@ -73,8 +73,9 @@ public record OperationalReport(
 
     private static List<ActivityResult> activityResults(List<ActivityExecution> executions) {
         return executions.stream()
-                .filter(ActivityExecution::isFinished)
-                .map(execution -> new ActivityResult(execution.activityId(), execution.result()))
+                .flatMap(execution -> execution.result()
+                        .map(result -> new ActivityResult(execution.activityId(), result))
+                        .stream())
                 .toList();
     }
 }

@@ -334,8 +334,8 @@ public final class Expedition {
     private void requirePredecessorsFinished(Activity activity, Instant at) {
         for (UUID predecessorId : activity.predecessors()) {
             boolean ready = executionOf(predecessorId)
-                    .filter(ActivityExecution::isFinished)
-                    .filter(execution -> !at.isBefore(execution.finishedAt()))
+                    .flatMap(ActivityExecution::finishedAt)
+                    .filter(end -> !at.isBefore(end))
                     .isPresent();
             if (!ready) {
                 throw new IllegalArgumentException("predecessor must finish before activity starts: " + predecessorId);

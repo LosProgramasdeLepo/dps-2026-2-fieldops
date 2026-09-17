@@ -38,12 +38,26 @@ public record TemporalBooking(Kind kind, UUID resourceId, UUID activityId, TimeP
                 .toList();
     }
 
-    public Optional<Boolean> availableIn(ResourceCatalog catalog) {
+    public boolean availableIn(ResourceCatalog catalog) {
+        return presence(catalog) == Presence.AVAILABLE;
+    }
+
+    public boolean unavailableIn(ResourceCatalog catalog) {
+        return presence(catalog) == Presence.UNAVAILABLE;
+    }
+
+    private Presence presence(ResourceCatalog catalog) {
         Objects.requireNonNull(catalog, "catalog");
         return switch (kind) {
-            case PERSON -> catalog.person(resourceId).map(person -> person.availableDuring(window));
-            case VEHICLE -> catalog.vehicle(resourceId).map(vehicle -> vehicle.availableDuring(window));
-            case INSTRUMENT -> catalog.instrument(resourceId).map(instrument -> instrument.availableDuring(window));
+            case PERSON -> catalog.person(resourceId)
+                    .map(person -> person.availableDuring(window) ? Presence.AVAILABLE : Presence.UNAVAILABLE)
+                    .orElse(Presence.UNKNOWN);
+            case VEHICLE -> catalog.vehicle(resourceId)
+                    .map(vehicle -> vehicle.availableDuring(window) ? Presence.AVAILABLE : Presence.UNAVAILABLE)
+                    .orElse(Presence.UNKNOWN);
+            case INSTRUMENT -> catalog.instrument(resourceId)
+                    .map(instrument -> instrument.availableDuring(window) ? Presence.AVAILABLE : Presence.UNAVAILABLE)
+                    .orElse(Presence.UNKNOWN);
         };
     }
 
@@ -60,4 +74,6 @@ public record TemporalBooking(Kind kind, UUID resourceId, UUID activityId, TimeP
     }
 
     public enum Kind { PERSON, VEHICLE, INSTRUMENT }
+
+    private enum Presence { UNKNOWN, AVAILABLE, UNAVAILABLE }
 }

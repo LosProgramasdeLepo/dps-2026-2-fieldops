@@ -28,10 +28,6 @@ public final class Person {
         return name;
     }
 
-    public List<Certification> certifications() {
-        return certifications;
-    }
-
     public boolean holds(UUID certificationId) {
         Objects.requireNonNull(certificationId, "certification id");
         return certifications.stream().anyMatch(held -> held.id().equals(certificationId));
