@@ -2,48 +2,58 @@
 
 ## Aplicadas
 
-**Strategy (`ActivityPolicy`).** Muestreo, medición y tránsito son ejemplos. Cada uno fija duración, riesgo y requisitos. `Activity` guarda id, ventana, zona y predecesores. Otro tipo es otra policy, no otra subclase de `Activity`.
+**Strategy.** Vive en `ActivityPolicy`. `SamplingPolicy`, `MeasurementPolicy` y `TransitPolicy` fijan duración, riesgo y requisitos. `Activity` guarda id, nombre, policy, ventana, zona y predecesores. Un tipo nuevo es otro record y un valor más en `permits`.
 
-**`Expedition` como agregado.** Incluye estados, asignaciones, permisos, warnings y seguimiento. El grafo ordenado de actividades vive en `Itinerary` (alta, baja, orden, dependencias, ciclos y ventanas). `Expedition` solo le aplica el estado y las reglas suyas (zona y período).
+**Assignment sellado.** Mismo corte en `Assignment` con persona, vehículo, instrumento y consumible. Solo `ConsumableAssignment` declara consumo. Un tipo nuevo es otro record y un valor más en `permits`.
 
-**Ids hacia el catálogo.** Personas, vehículos, instrumentos, consumibles y permisos viven afuera. La expedición guarda UUIDs.
+**Agregado.** `Expedition` concentra ciclo de vida, asignaciones, permisos, warnings y seguimiento. `Itinerary` concentra el grafo. `Expedition` le aplica estado, zona y período. `Itinerary` es público porque vive en otro paquete. Validador, sugeridor, replanner e informe son clases aparte.
 
-**Catálogo de recursos (`ResourceCatalog`).** Una clase: alta, unicidad, lookup y listado. El validador, el sugeridor y el replanner la usan de forma directa.
+**Identidad por UUID.** Personas, vehículos, instrumentos, consumibles y permisos viven en el catálogo. La expedición guarda ids.
 
-**Persona como recurso temporal.** Se asigna a una actividad, no a la expedición entera. El enunciado no limita a una expedición a la vez, pero sí se debe evitar un choque de ventanas temporales.
+**ResourceCatalog concreto.** Alta, unicidad y lookup. Lista personas, vehículos e instrumentos. Consumibles y permisos se buscan por id. Validador, sugeridor y replanner reciben esta clase.
 
-**Permiso ≠ certificación.** `Permit` cubre zona y vigencia y se adjunta a la expedición. `Certification` es capacitación de una persona; las policies la piden por UUID. Vehículos e instrumentos no tienen certificación técnica.
+**Persona por actividad.** La asignación es a una actividad. El solape de ventanas se valida entre actividades y entre expediciones que ocupan.
 
-**Consumible aparte.** No tiene `Availability`, sino `stock`. Una vez asignado en expediciones que ocupan recursos, esa cantidad no se reusa. Persona, vehículo e instrumento se reusan si las ventanas no se solapan.
+**Permiso y certificación.** `Permit` cubre zona y vigencia, y se adjunta a la expedición. `Certification` vive en la persona. `SamplingPolicy` y `MeasurementPolicy` la piden por UUID. Vehículos e instrumentos se habilitan por disponibilidad.
 
-**Quién ocupa recursos.** `IN_REVIEW`, `APPROVED`, `IN_PROGRESS` y `SUSPENDED`. `DRAFT` no reserva. `FINISHED` libera personas y equipo, y el stock del catálogo es el depósito actual, no se descuenta lo ya consumido.
+**Consumible por stock.** La cantidad asignada en la expedición validada y en las que ocupan se compara con el depósito del catálogo. Persona, vehículo e instrumento se reusan con ventanas disjuntas.
 
-**Validación fuera del agregado.** `approve` recibe `ValidationResult`, no lo calcula. `ExpeditionValidator` llama las reglas del enunciado, cada una con lo que usa: todas reciben expedición y catálogo; superposición y stock también las expediciones que ocupan. Otra regla es otra clase y una llamada más. Las demás expediciones entran como lista; se descarta el self y las que no ocupan. Un id ausente del catálogo es `RESOURCE`, también un permiso adjunto desconocido. Personal faltante (la activity pide certificación y no hay persona asignada) también es `RESOURCE`. `CERTIFICATION` solo si hay personas conocidas asignadas que no la tienen. `PERMIT` de cobertura solo si hay permisos conocidos que evaluar. Disponibilidad, stock, certificación (si no hay persona conocida que evaluar) y capacidad (si hay un vehículo desconocido) no se reportan otra vez para ese id.
+**Reserva.** `IN_REVIEW`, `APPROVED`, `IN_PROGRESS` y `SUSPENDED` ocupan. `DRAFT` y `FINISHED` dejan personas y equipo libres. El stock del catálogo es el depósito actual. Las terminadas quedan fuera del compromiso de stock.
 
-**Severidad.** Superposición, disponibilidad de catálogo, stock, certificación, permiso y recurso faltante o desconocido son `CRITICAL`. Exceso de capacidad es `WARNING`. La capacidad de una actividad es la suma de los vehículos asignados a esa actividad, y los pasajeros las personas asignadas a la misma.
+**Validación fuera del agregado.** `approve` recibe un `ValidationResult` ya calculado. `ExpeditionValidator` llama seis reglas. Cuatro reciben expedición y catálogo. `TemporalOverlapRule` y `StockRule` también reciben las que ocupan, usando `occupyingPeers`. Otra regla es otra clase y una llamada más.
 
-**Estados en el enum.** Las transiciones están en `Expedition`. El itinerario solo se toca en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings solo en revisión, borrándolos `returnToDraft`. `returnToDraft` vale desde `IN_REVIEW`, `APPROVED`, `IN_PROGRESS` y `SUSPENDED`; en estados activos borra las ejecuciones porque el plan se vuelve a armar. `FINISHED` no vuelve. Incidentes y observaciones en estados activos. Start/finish de una actividad, solo en `IN_PROGRESS`. `startActivity` exige predecesores terminados. `finish` de la expedición exige todas las actividades cerradas. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
+**Códigos.** `RESOURCE` cubre id ausente, permiso adjunto desconocido, y actividad cuya policy pide persona, vehículo o instrumento con esa asignación vacía. `CERTIFICATION` sale si hay personas conocidas asignadas y todas omiten la certificación pedida. `PERMIT` sale por cada actividad descubierta frente a los permisos conocidos. Lista de adjuntos vacía cuenta como todas descubiertas. Si los adjuntos son todos desconocidos sale solo `RESOURCE`. Un id ya cubierto por `RESOURCE` omite disponibilidad, stock, certificación y capacidad.
 
-**Proponer asignaciones.** `AssignmentSuggester` no muta el plan, sino que devuelve huecos (certificación, vehículo, instrumento) con el primer recurso del catálogo libre en la ventana. No choca con asignaciones propias ni con expediciones que ocupan. `addAssignment` realiza.
+**Severidad.** `OVERLAP`, `AVAILABILITY`, `STOCK`, `CERTIFICATION`, `PERMIT` y `RESOURCE` son `CRITICAL`. `CAPACITY` es `WARNING`. La capacidad de una actividad suma los vehículos asignados a esa actividad. Los pasajeros son las personas asignadas a la misma.
 
-**Replanificación.** `Replanner` arma la alternativa sobre el agregado, cancelando actividad, moviendo ventanas (`delay`) y soltando asignaciones inválidas, para después rellenar huecos con el sugeridor. Cancelar y atrasar tocan el itinerario, por lo que se vuelve la expedición a `DRAFT` si no se encuentra en ese estado. Reemplazar indisponibles también en `IN_REVIEW`, sin volver a borrador. Cancelar un predecesor suelta esa dependencia en las que lo usaban, pero no borra las actividades dependientes. `delay` corre la actividad y empuja dependientes (por el grafo, no por el orden de la lista) lo justo para que el predecesor termine antes; si alguna ventana quedaría fuera del período, no aplica nada.
+**Estados.** Las transiciones viven en `Expedition`. El itinerario se edita en `DRAFT`. Asignaciones y permisos también en `IN_REVIEW`. Warnings en revisión. `returnToDraft` vale desde `IN_REVIEW`, `APPROVED`, `IN_PROGRESS` y `SUSPENDED`, y en los dos activos borra ejecuciones. `FINISHED` es terminal. Incidentes y observaciones en `IN_PROGRESS` y `SUSPENDED`. Inicio y cierre de actividad en `IN_PROGRESS`, con predecesores ya terminados. `finish` de la expedición exige todas las actividades cerradas. Se puede suspender desde `APPROVED` o `IN_PROGRESS`.
 
-**`OperationalReport`.** Se deriva del plan, no es un caso de uso. Resumen = estado y avance (planificadas / iniciadas / terminadas). Duración = suma de las estimadas (no el calendario, no paralelismo). Riesgo = el más alto. Consumo = lo que declaran las asignaciones. Resultados = los de las ejecuciones terminadas. `ActivityExecution` es inmutable: `finish` devuelve otra instancia; el agregado reemplaza la suya. `executions()` no deja terminar una actividad por fuera de `finishActivity`.
+**AssignmentSuggester.** Devuelve huecos de certificación, vehículo e instrumento. Toma el primero del catálogo disponible en la ventana y libre respecto de asignaciones propias y de las que ocupan. `addAssignment` aplica.
 
-**Invariantes locales.** La ventana de tiempo no puede ser más corta que la duración de la policy. Los predecesores tienen que existir, no formar ciclos y terminar antes de que empiece la actividad (en el plan y al ejecutar). El orden del itinerario se cambia en `DRAFT` con `reorderActivities`. La zona de la actividad tiene que estar en la expedición. `TimePeriod` y `Quantity` se validan al construirse.
+**Replanner.** Cancela, atrasa o reemplaza indisponibles sobre el agregado y después rellena con el sugeridor. Cancelar y atrasar tocan el itinerario, así que si el estado es otro llaman a `returnToDraft`. `replaceUnavailable` corre en `DRAFT` o `IN_REVIEW` y deja el estado. Suelta persona, vehículo o instrumento inválido por catálogo o solape. El consumible asignado queda. Cancelar un predecesor suelta esa dependencia y deja las actividades dependientes. `delay` corre la actividad y empuja dependientes según el grafo. Si alguna ventana excedería el período, se rechaza y las ventanas quedan iguales.
 
-**Errores.** Transición ilegal (`InvalidExpeditionTransition`), no se puede aprobar (`ExpeditionNotApprovable`) y dato inválido (`IllegalArgumentException`).
+**OperationalReport.** Se deriva del plan. El resumen trae estado, planificadas, iniciadas y terminadas. La duración es la suma de estimadas. El riesgo es el máximo de las actividades, `LOW` con itinerario vacío. El consumo es lo que declaran las asignaciones. Los resultados salen de las ejecuciones terminadas.
+
+**ActivityExecution inmutable.** `finish` devuelve otra instancia. El agregado la reemplaza en `finishActivity`. Una copia de `executions()` deja el plan igual.
+
+**TemporalBooking.** Unifica persona, vehículo e instrumento en una ventana. Lo usan `TemporalOverlapRule`, `AssignmentSuggester` y `Replanner`.
+
+**Servicios estáticos.** `ExpeditionValidator`, `AssignmentSuggester` y `Replanner` se invocan por métodos estáticos. Reciben expedición, catálogo y pares.
+
+**Invariantes.** La ventana alcanza la duración de la policy. Los predecesores existen, forman un acíclico y terminan antes del inicio, en el plan y al ejecutar. El orden se cambia en `DRAFT` con `reorderActivities`. La zona de la actividad está en la expedición. `TimePeriod`, `Quantity` y `WorkZone` se validan al construirse.
+
+**Errores.** `InvalidExpeditionTransition` cubre transición ilegal. `ExpeditionNotApprovable` cubre aprobación bloqueada. `InvalidActivityExecution` cubre terminar dos veces. `IllegalArgumentException` cubre dato inválido.
 
 ## Descartadas
 
-**Heredar `Activity`.** Cambia la regla, no el hecho de ser una actividad. Con Strategy no crece una jerarquía por tipo.
+**Heredar Activity.** El tipo cambia la regla. La consecuencia es un record nuevo y ampliar `permits`.
 
-**Listas de vehículos/personas en `Expedition`.** Se asignan a una actividad, no a la expedición entera.
+**Listas de flota en Expedition.** La asignación es por actividad. Capacidad, certificación y solape se evalúan por ventana.
 
-**Interfaz `Catalog` / `InMemoryCatalog`.** Un puerto con un implementador no se justifica hasta que haya persistencia.
+**Puerto Catalog.** Un implementador espera persistencia. Validador, sugeridor y replanner dependen de `ResourceCatalog`.
 
-**`Resource`.** El consumible no comparte disponibilidad temporal con el resto. El validador trata asignaciones temporales y stock por separado.
+**Supertipo Resource.** El consumible se rige por stock. El resto, por disponibilidad. El validador tiene `TemporalOverlapRule` y `StockRule` por separado.
 
-**State pattern.** Con el enum y `requireStatus` alcanza.
+**State pattern.** El enum y `requireStatus` cubren las transiciones. Un estado nuevo es un valor y una guarda en `Expedition`.
 
-**Inyectar reglas / interfaz `ValidationRule`.** El conjunto lo fija el enunciado. Cuatro reglas miran solo el plan y el catálogo; dos también a las pares. Un contrato único obliga a parámetros de más o a overloads. El validador las llama; otra regla se agrega ahí.
+**Interfaz ValidationRule.** Cuatro reglas reciben expedición y catálogo. Dos también las que ocupan. Un contrato único pediría parámetros de más o sobrecargas. Una regla nueva se suma como clase y como llamada en `ExpeditionValidator`.
