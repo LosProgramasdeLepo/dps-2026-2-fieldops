@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,15 +34,17 @@ class ResourceCatalogTest {
         catalog.add(vials);
         catalog.add(permit);
 
-        assertEquals(person, catalog.person(person.id()).orElseThrow());
-        assertEquals(vehicle, catalog.vehicle(vehicle.id()).orElseThrow());
-        assertEquals(instrument, catalog.instrument(instrument.id()).orElseThrow());
-        assertEquals(vials, catalog.consumable(vials.id()).orElseThrow());
-        assertEquals(permit, catalog.permit(permit.id()).orElseThrow());
-        assertTrue(catalog.person(UUID.randomUUID()).isEmpty());
-        assertEquals(List.of(person), catalog.people());
-        assertEquals(List.of(vehicle), catalog.vehicles());
-        assertEquals(List.of(instrument), catalog.instruments());
+        assertAll(
+                () -> assertEquals(person, catalog.person(person.id()).orElseThrow()),
+                () -> assertEquals(vehicle, catalog.vehicle(vehicle.id()).orElseThrow()),
+                () -> assertEquals(instrument, catalog.instrument(instrument.id()).orElseThrow()),
+                () -> assertEquals(vials, catalog.consumable(vials.id()).orElseThrow()),
+                () -> assertEquals(permit, catalog.permit(permit.id()).orElseThrow()),
+                () -> assertTrue(catalog.person(UUID.randomUUID()).isEmpty()),
+                () -> assertEquals(List.of(person), catalog.people()),
+                () -> assertEquals(List.of(vehicle), catalog.vehicles()),
+                () -> assertEquals(List.of(instrument), catalog.instruments())
+        );
     }
 
     @Test

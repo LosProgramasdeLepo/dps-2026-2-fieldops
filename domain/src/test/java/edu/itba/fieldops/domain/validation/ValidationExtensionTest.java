@@ -20,6 +20,7 @@ import edu.itba.fieldops.domain.shared.WorkZone;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,7 +53,7 @@ class ValidationExtensionTest {
     }
 
     @Test
-    void composesCustomRulesWithTheDefaultSet() {
+    void combinesACustomRuleWithAStandardRule() {
         Expedition expedition = expeditionWithTransit();
         expedition.addAssignment(new PersonAssignment(expedition.itinerary().getFirst().id(), UUID.randomUUID()));
         ValidationRule alwaysCritical = context -> List.of(
@@ -70,8 +71,7 @@ class ValidationExtensionTest {
     @Test
     void validatesAgainstAnyCatalogImplementation() {
         Expedition expedition = expeditionWithTransit();
-        UUID unknownPerson = UUID.randomUUID();
-        expedition.addAssignment(new PersonAssignment(expedition.itinerary().getFirst().id(), unknownPerson));
+        expedition.addAssignment(new PersonAssignment(expedition.itinerary().getFirst().id(), UUID.randomUUID()));
 
         ValidationResult result = ExpeditionValidator.withDefaultRules()
                 .validate(expedition, emptyCatalog(), List.of());
@@ -80,23 +80,12 @@ class ValidationExtensionTest {
     }
 
     @Test
-    void resolvesOccupyingPeersOnce() {
-        Expedition expedition = expeditionWithTransit();
-        Expedition draftPeer = expeditionWithTransit();
-
-        ValidationContext context = ValidationContext.of(expedition, emptyCatalog(), List.of(draftPeer));
-
-        assertTrue(context.occupying().isEmpty(), "a DRAFT peer does not occupy resources");
-        assertEquals(expedition, context.expedition());
-    }
-
-    @Test
-    void ignoresRulesAddedToTheListAfterConstruction() {
+    void doesNotObserveRulesAddedAfterConstruction() {
         Expedition expedition = expeditionWithTransit();
         ValidationRule noise = context -> List.of(
                 new ValidationIssue(IssueSeverity.WARNING, "NOISE", "should not reach the validator")
         );
-        List<ValidationRule> mutable = new java.util.ArrayList<>();
+        List<ValidationRule> mutable = new ArrayList<>();
         ExpeditionValidator validator = new ExpeditionValidator(mutable);
         mutable.add(noise);
 

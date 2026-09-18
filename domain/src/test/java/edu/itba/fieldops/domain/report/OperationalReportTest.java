@@ -12,6 +12,7 @@ import edu.itba.fieldops.domain.shared.RiskLevel;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
 import edu.itba.fieldops.domain.assessment.ValidationResult;
+import edu.itba.fieldops.domain.tracking.Incident;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OperationalReportTest {
@@ -36,14 +38,16 @@ class OperationalReportTest {
 
         OperationalReport report = OperationalReport.of(expedition);
 
-        assertEquals(ExpeditionStatus.DRAFT, report.status());
-        assertEquals(1, report.plannedActivities());
-        assertEquals(0, report.startedActivities());
-        assertEquals(0, report.finishedActivities());
-        assertEquals(Duration.ofHours(3), report.duration());
-        assertEquals(RiskLevel.HIGH, report.risk());
-        assertEquals(new Quantity(7), report.consumption().get(vials));
-        assertEquals(List.of(), report.activityResults());
+        assertAll(
+                () -> assertEquals(ExpeditionStatus.DRAFT, report.status()),
+                () -> assertEquals(1, report.plannedActivities()),
+                () -> assertEquals(0, report.startedActivities()),
+                () -> assertEquals(0, report.finishedActivities()),
+                () -> assertEquals(Duration.ofHours(3), report.duration()),
+                () -> assertEquals(RiskLevel.HIGH, report.risk()),
+                () -> assertEquals(new Quantity(7), report.consumption().get(vials)),
+                () -> assertEquals(List.of(), report.activityResults())
+        );
     }
 
     @Test
@@ -58,11 +62,27 @@ class OperationalReportTest {
 
         OperationalReport report = OperationalReport.of(expedition);
 
-        assertEquals(ExpeditionStatus.IN_PROGRESS, report.status());
-        assertEquals(1, report.plannedActivities());
-        assertEquals(1, report.startedActivities());
-        assertEquals(1, report.finishedActivities());
-        assertEquals(List.of(new ActivityResult(activity.id(), "samples stored")), report.activityResults());
+        assertAll(
+                () -> assertEquals(ExpeditionStatus.IN_PROGRESS, report.status()),
+                () -> assertEquals(1, report.plannedActivities()),
+                () -> assertEquals(1, report.startedActivities()),
+                () -> assertEquals(1, report.finishedActivities()),
+                () -> assertEquals(List.of(new ActivityResult(activity.id(), "samples stored")), report.activityResults())
+        );
+    }
+
+    @Test
+    void includesIncidents() {
+        Expedition expedition = draftWithMeasurement();
+        expedition.submitForReview();
+        expedition.approve(ValidationResult.empty());
+        expedition.start();
+        Incident incident = Incident.of("ventisca en el frente", START);
+        expedition.addIncident(incident);
+
+        OperationalReport report = OperationalReport.of(expedition);
+
+        assertEquals(List.of(incident), report.incidents());
     }
 
     private static Expedition draftWithMeasurement() {

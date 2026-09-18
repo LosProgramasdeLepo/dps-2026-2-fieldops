@@ -9,7 +9,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CatalogConstructionTest {
@@ -19,36 +20,48 @@ class CatalogConstructionTest {
     );
 
     @Test
-    void personHoldsCertificationsAndAvailability() {
+    void personHoldsCertificationAndAvailability() {
         Certification sampling = new Certification(UUID.randomUUID(), "Sampling");
         Person person = new Person(UUID.randomUUID(), "Ada", List.of(sampling), Availability.always());
 
-        assertTrue(person.holds(sampling.id()));
-        assertTrue(person.availableDuring(WEEK));
+        assertAll(
+                () -> assertTrue(person.holds(sampling.id())),
+                () -> assertFalse(person.holds(UUID.randomUUID())),
+                () -> assertTrue(person.availableDuring(WEEK))
+        );
     }
 
     @Test
-    void vehicleInstrumentAndConsumableHaveOwnBehavior() {
-        Vehicle vehicle = new Vehicle(UUID.randomUUID(), new Quantity(4), Availability.always());
-        Instrument instrument = new Instrument(UUID.randomUUID(), "pH meter", Availability.always());
+    void consumableComparesAgainstStock() {
         Consumable vials = new Consumable(UUID.randomUUID(), "vials", new Quantity(20));
 
-        assertEquals(new Quantity(4), vehicle.capacity());
-        assertTrue(instrument.availableDuring(WEEK));
-        assertTrue(vials.hasAtLeast(new Quantity(20)));
+        assertAll(
+                () -> assertTrue(vials.hasAtLeast(new Quantity(20))),
+                () -> assertFalse(vials.hasAtLeast(new Quantity(21)))
+        );
     }
 
     @Test
-    void permitCoversMatchingZone() {
+    void permitCoversMatchingZoneAndWindow() {
         Permit permit = new Permit(UUID.randomUUID(), new WorkZone("Delta"), WEEK);
 
-        assertTrue(permit.covers(new WorkZone("Delta"), WEEK));
+        assertAll(
+                () -> assertTrue(permit.covers(new WorkZone("Delta"), WEEK)),
+                () -> assertFalse(permit.covers(new WorkZone("Coast"), WEEK))
+        );
     }
 
     @Test
     void availabilityCoversWhenAPeriodContainsTheWindow() {
         Availability availability = new Availability(List.of(WEEK));
+        TimePeriod december = new TimePeriod(
+                Instant.parse("2026-12-01T00:00:00Z"),
+                Instant.parse("2026-12-02T00:00:00Z")
+        );
 
-        assertTrue(availability.covers(WEEK));
+        assertAll(
+                () -> assertTrue(availability.covers(WEEK)),
+                () -> assertFalse(availability.covers(december))
+        );
     }
 }

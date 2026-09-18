@@ -2,11 +2,13 @@ package edu.itba.fieldops.domain.expedition;
 
 import edu.itba.fieldops.domain.catalog.Availability;
 import edu.itba.fieldops.domain.catalog.Certification;
+import edu.itba.fieldops.domain.catalog.Consumable;
 import edu.itba.fieldops.domain.catalog.Person;
 import edu.itba.fieldops.domain.catalog.ResourceCatalog;
 import edu.itba.fieldops.domain.itinerary.Activity;
 import edu.itba.fieldops.domain.itinerary.SamplingPolicy;
 import edu.itba.fieldops.domain.itinerary.TransitPolicy;
+import edu.itba.fieldops.domain.shared.Quantity;
 import edu.itba.fieldops.domain.shared.TimePeriod;
 import edu.itba.fieldops.domain.shared.WorkZone;
 import edu.itba.fieldops.domain.assessment.ValidationResult;
@@ -225,6 +227,33 @@ class ReplannerTest {
         replanner.replaceUnavailable(expedition, catalog, List.of(occupying));
 
         assertEquals(List.of(new PersonAssignment(sample.id(), bob.id())), expedition.assignments());
+    }
+
+    @Test
+    void replaceUnavailableKeepsConsumable() {
+        Certification certification = new Certification(UUID.randomUUID(), "Sampling");
+        Person ada = new Person(UUID.randomUUID(), "Ada", List.of(certification), Availability.always());
+        Person bob = new Person(UUID.randomUUID(), "Bob", List.of(certification), Availability.always());
+        Consumable vials = new Consumable(UUID.randomUUID(), "vials", new Quantity(10));
+        Activity occupied = sampling(certification.id(), 0, 4);
+        Expedition occupying = draftWith(occupied);
+        occupying.addAssignment(new PersonAssignment(occupied.id(), ada.id()));
+        occupying.submitForReview();
+        Activity sample = sampling(certification.id(), 0, 4);
+        ConsumableAssignment vialsAssigned = new ConsumableAssignment(sample.id(), vials.id(), new Quantity(3));
+        Expedition expedition = draftWith(sample);
+        expedition.addAssignment(new PersonAssignment(sample.id(), ada.id()));
+        expedition.addAssignment(vialsAssigned);
+        ResourceCatalog catalog = new ResourceCatalog();
+        catalog.add(ada);
+        catalog.add(bob);
+        catalog.add(vials);
+
+        replanner.replaceUnavailable(expedition, catalog, List.of(occupying));
+
+        assertEquals(2, expedition.assignments().size());
+        assertTrue(expedition.assignments().contains(vialsAssigned));
+        assertTrue(expedition.assignments().contains(new PersonAssignment(sample.id(), bob.id())));
     }
 
     @Test

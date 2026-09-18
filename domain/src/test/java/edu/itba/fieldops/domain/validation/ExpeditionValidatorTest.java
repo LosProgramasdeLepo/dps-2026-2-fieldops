@@ -257,6 +257,21 @@ class ExpeditionValidatorTest {
     }
 
     @Test
+    void finishedPeerDoesNotConsumeStock() {
+        SamplingPlan first = samplingPlan(0, 4);
+        Consumable vials = new Consumable(UUID.randomUUID(), "vials", new Quantity(10));
+        first.catalog.add(vials);
+        first.expedition.addAssignment(new ConsumableAssignment(first.activity.id(), vials.id(), new Quantity(10)));
+        finish(first.expedition, first.activity);
+        Expedition second = samplingOn(first, 4, 8);
+        second.addAssignment(new ConsumableAssignment(second.itinerary().getFirst().id(), vials.id(), new Quantity(10)));
+
+        ValidationResult result = validator.validate(second, first.catalog, List.of(first.expedition));
+
+        assertNo(result, "STOCK");
+    }
+
+    @Test
     void excessCapacityIsAWarning() {
         TransitPlan plan = crowdedTransit();
 

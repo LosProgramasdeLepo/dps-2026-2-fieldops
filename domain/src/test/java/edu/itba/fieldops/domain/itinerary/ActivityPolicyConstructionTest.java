@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,11 +23,13 @@ class ActivityPolicyConstructionTest {
         Activity transit = activity("move", new TransitPolicy(), Duration.ofHours(2));
         Activity measurement = activity("measure", new MeasurementPolicy(UUID.randomUUID()), Duration.ofHours(3));
 
-        assertFalse(sampling.requirements().needsVehicle());
-        assertTrue(transit.requirements().needsVehicle());
-        assertTrue(measurement.requirements().needsInstrument());
-        assertEquals(RiskLevel.HIGH, measurement.risk());
-        assertEquals(Duration.ofHours(2), transit.estimatedDuration());
+        assertAll(
+                () -> assertFalse(sampling.requirements().needsVehicle()),
+                () -> assertTrue(transit.requirements().needsVehicle()),
+                () -> assertTrue(measurement.requirements().needsInstrument()),
+                () -> assertEquals(RiskLevel.HIGH, measurement.risk()),
+                () -> assertEquals(Duration.ofHours(2), transit.estimatedDuration())
+        );
     }
 
     @Test
